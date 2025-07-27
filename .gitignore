@@ -47,9 +47,10 @@ frontend/dist/
 
 # Claude
 .claude/
-!.claude/CLAUDE.md
-!.claude/agents/
-!.claude/development_journey.md
+
+# Documentation (except README)
+*.md
+!README.md
 
 # Logs
 logs/
