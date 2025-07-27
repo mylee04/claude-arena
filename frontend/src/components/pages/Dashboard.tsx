@@ -82,7 +82,7 @@ const Dashboard: React.FC = () => {
                     <div key={entry.userId} className="flex items-center justify-between text-sm">
                       <div className="flex items-center gap-2">
                         <span className="text-muted font-mono w-6">#{entry.rank}</span>
-                        <span className="font-medium text-gray-900 dark:text-gray-300">
+                        <span className="font-medium text-black dark:text-gray-300">
                           {entry.displayName}
                         </span>
                       </div>
