@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { 
   Calendar, Code, Zap, Trophy, Wrench, Clock, TrendingUp,
   Camera, Save, Loader2, User, Settings, Shield, Award,
-  BarChart3, Target, Flame, Edit2
+  BarChart3, Flame, Edit2
 } from 'lucide-react';
 import { mockUsers, allAchievements } from '../../utils/mockData';
 import AchievementBadge from '../ui/AchievementBadge';

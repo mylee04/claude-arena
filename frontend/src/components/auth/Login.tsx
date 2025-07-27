@@ -1,11 +1,9 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
 import { Loader2, Trophy } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { toast } from "sonner";
 
 export function Login() {
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
 

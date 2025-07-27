@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Trophy, User, Users, Info, BarChart3, LogOut, Settings, ChevronDown } from 'lucide-react';
 import { ThemeSwitcher } from '../ui/ThemeSwitcher';
 import { useAuth } from '../../contexts/AuthContext';
 
 const Header: React.FC = () => {
   const location = useLocation();
-  const navigate = useNavigate();
   const { user, userProfile, signOut } = useAuth();
   const [showUserMenu, setShowUserMenu] = useState(false);
 
