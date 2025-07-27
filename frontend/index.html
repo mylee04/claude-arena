@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Claude Arena - Gamified Leaderboard Platform</title>
+    <script>
+      // Prevent FOUC by setting theme class before React loads
+      try {
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        if (savedTheme === 'system') {
+          const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          document.documentElement.classList.add(prefersDark ? 'dark' : 'light');
+        } else {
+          document.documentElement.classList.add(savedTheme);
+        }
+      } catch (e) {
+        document.documentElement.classList.add('dark');
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

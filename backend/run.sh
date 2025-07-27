@@ -14,5 +14,9 @@ echo "Installing dependencies..."
 pip install -r requirements.txt
 
 # Run the application
-echo "Starting Claude Arena API..."
-python main.py
+echo "Starting Claude Arena API on port 8282..."
+# Option 1: Use uvicorn directly (recommended)
+uvicorn main:app --reload --host 0.0.0.0 --port 8282
+
+# Option 2: Use python main.py (alternative - will use config.py settings)
+# python main.py

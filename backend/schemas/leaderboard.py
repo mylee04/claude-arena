@@ -41,6 +41,7 @@ class LeaderboardEntry(BaseModel):
     username: str
     score: float
     display_value: str  # Formatted value to show
+    avatar_url: Optional[str] = None  # User avatar
     badge: Optional[str] = None  # Emoji badge if earned
 
 class LeaderboardCategory(BaseModel):
@@ -50,6 +51,7 @@ class LeaderboardCategory(BaseModel):
     description: str
     icon: str  # Emoji icon
     entries: List[LeaderboardEntry]
+    total_participants: Optional[int] = 0
     
 class ImportRequest(BaseModel):
     """Request to import data from Sniffly or other sources"""

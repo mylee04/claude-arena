@@ -1,0 +1,194 @@
+[
+  {
+    "username": "CodeMaster2024",
+    "total_score": 1087,
+    "category_scores": {
+      "file_operations": 263,
+      "git_operations": 197,
+      "testing": 136,
+      "debugging": 205,
+      "refactoring": 73,
+      "documentation": 68,
+      "performance": 98,
+      "security": 47
+    },
+    "last_updated": "2025-07-09T04:08:34.505044Z",
+    "rank": 1
+  },
+  {
+    "username": "DebugDetective",
+    "total_score": 882,
+    "category_scores": {
+      "file_operations": 256,
+      "git_operations": 165,
+      "testing": 23,
+      "debugging": 123,
+      "refactoring": 178,
+      "documentation": 48,
+      "performance": 41,
+      "security": 48
+    },
+    "last_updated": "2025-07-24T04:08:34.505231Z",
+    "rank": 2
+  },
+  {
+    "username": "PythonPro",
+    "total_score": 862,
+    "category_scores": {
+      "file_operations": 228,
+      "git_operations": 200,
+      "testing": 44,
+      "debugging": 136,
+      "refactoring": 174,
+      "documentation": 30,
+      "performance": 21,
+      "security": 29
+    },
+    "last_updated": "2025-07-20T04:08:34.505214Z",
+    "rank": 3
+  },
+  {
+    "username": "FullStackFury",
+    "total_score": 846,
+    "category_scores": {
+      "file_operations": 133,
+      "git_operations": 192,
+      "testing": 22,
+      "debugging": 240,
+      "refactoring": 132,
+      "documentation": 44,
+      "performance": 69,
+      "security": 14
+    },
+    "last_updated": "2025-06-29T04:08:34.505227Z",
+    "rank": 4
+  },
+  {
+    "username": "ReactRockstar",
+    "total_score": 839,
+    "category_scores": {
+      "file_operations": 210,
+      "git_operations": 199,
+      "testing": 37,
+      "debugging": 41,
+      "refactoring": 176,
+      "documentation": 72,
+      "performance": 76,
+      "security": 28
+    },
+    "last_updated": "2025-07-18T04:08:34.505220Z",
+    "rank": 5
+  },
+  {
+    "username": "SecuritySage",
+    "total_score": 836,
+    "category_scores": {
+      "file_operations": 74,
+      "git_operations": 97,
+      "testing": 112,
+      "debugging": 183,
+      "refactoring": 180,
+      "documentation": 33,
+      "performance": 90,
+      "security": 67
+    },
+    "last_updated": "2025-06-28T04:08:34.505242Z",
+    "rank": 6
+  },
+  {
+    "username": "BackendBoss",
+    "total_score": 824,
+    "category_scores": {
+      "file_operations": 58,
+      "git_operations": 169,
+      "testing": 82,
+      "debugging": 231,
+      "refactoring": 178,
+      "documentation": 59,
+      "performance": 27,
+      "security": 20
+    },
+    "last_updated": "2025-07-26T04:08:34.505224Z",
+    "rank": 7
+  },
+  {
+    "username": "DocDynamo",
+    "total_score": 801,
+    "category_scores": {
+      "file_operations": 279,
+      "git_operations": 72,
+      "testing": 81,
+      "debugging": 151,
+      "refactoring": 121,
+      "documentation": 60,
+      "performance": 16,
+      "security": 21
+    },
+    "last_updated": "2025-06-29T04:08:34.505252Z",
+    "rank": 8
+  },
+  {
+    "username": "TestingTitan",
+    "total_score": 799,
+    "category_scores": {
+      "file_operations": 103,
+      "git_operations": 194,
+      "testing": 79,
+      "debugging": 219,
+      "refactoring": 64,
+      "documentation": 94,
+      "performance": 40,
+      "security": 6
+    },
+    "last_updated": "2025-06-27T04:08:34.505238Z",
+    "rank": 9
+  },
+  {
+    "username": "RefactorRanger",
+    "total_score": 714,
+    "category_scores": {
+      "file_operations": 75,
+      "git_operations": 109,
+      "testing": 69,
+      "debugging": 177,
+      "refactoring": 142,
+      "documentation": 89,
+      "performance": 44,
+      "security": 9
+    },
+    "last_updated": "2025-07-07T04:08:34.505235Z",
+    "rank": 10
+  },
+  {
+    "username": "PerformanceGuru",
+    "total_score": 675,
+    "category_scores": {
+      "file_operations": 108,
+      "git_operations": 111,
+      "testing": 56,
+      "debugging": 160,
+      "refactoring": 150,
+      "documentation": 31,
+      "performance": 53,
+      "security": 6
+    },
+    "last_updated": "2025-07-12T04:08:34.505245Z",
+    "rank": 11
+  },
+  {
+    "username": "GitGuru",
+    "total_score": 603,
+    "category_scores": {
+      "file_operations": 189,
+      "git_operations": 38,
+      "testing": 40,
+      "debugging": 88,
+      "refactoring": 81,
+      "documentation": 60,
+      "performance": 39,
+      "security": 68
+    },
+    "last_updated": "2025-07-20T04:08:34.505248Z",
+    "rank": 12
+  }
+]
