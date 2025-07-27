@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Search, Filter, TrendingUp, TrendingDown, Minus, Clock } from 'lucide-react';
+import { Search, TrendingUp, TrendingDown, Minus, Clock } from 'lucide-react';
 import { 
   leaderboardCategories, 
   mockLeaderboardData
 } from '../../utils/mockData';
-import type { TimePeriod, LeaderboardCategory, LeaderboardEntry } from '../../types';
+import type { TimePeriod, LeaderboardEntry } from '../../types';
 import LoadingSpinner from '../ui/LoadingSpinner';
 
 const Leaderboards: React.FC = () => {

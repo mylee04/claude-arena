@@ -15,7 +15,6 @@ export function ThemeSwitcher() {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Get current theme icon
-  const currentThemeOption = themes.find((t) => t.value === theme) || themes[1];
   const CurrentIcon = resolvedTheme === 'dark' ? Moon : Sun;
 
   useEffect(() => {

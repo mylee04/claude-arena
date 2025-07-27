@@ -78,7 +78,7 @@ const Dashboard: React.FC = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  {topEntries.map((entry, index) => (
+                  {topEntries.map((entry) => (
                     <div key={entry.userId} className="flex items-center justify-between text-sm">
                       <div className="flex items-center gap-2">
                         <span className="text-muted font-mono w-6">#{entry.rank}</span>

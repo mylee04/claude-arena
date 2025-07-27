@@ -120,7 +120,7 @@ const Profile: React.FC = () => {
                   fill="#8884d8"
                   dataKey="value"
                 >
-                  {toolUsageData.map((entry, index) => (
+                  {toolUsageData.map((_, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
