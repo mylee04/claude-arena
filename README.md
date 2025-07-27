@@ -67,7 +67,13 @@ npm install
    python scripts/import_sniffly.py my-stats.json
    ```
 
-3. View your rankings at http://localhost:3000
+3. Start the backend API (runs on port 8282):
+   ```bash
+   cd backend
+   ./run.sh
+   ```
+
+4. View your rankings at http://localhost:3000
 
 ## 🤝 Works With Sniffly!
 
