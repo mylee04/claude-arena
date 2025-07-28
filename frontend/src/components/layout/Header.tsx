@@ -64,9 +64,9 @@ const Header: React.FC = () => {
           <div className="flex items-center gap-4">
             <ThemeSwitcher />
             {user && (
-              <button className="btn-secondary text-sm">
+              <Link to="/import" className="btn-secondary text-sm">
                 Import Data
-              </button>
+              </Link>
             )}
             
             {user ? (

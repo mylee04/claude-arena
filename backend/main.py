@@ -157,12 +157,11 @@ async def shutdown_event():
 
 # Import routers
 try:
-    from routers import leaderboard, import_data, simple_leaderboard
+    from routers import leaderboard, import_data
     
     # Include routers
     app.include_router(leaderboard.router, prefix="/api/leaderboard", tags=["leaderboard"])
-    app.include_router(import_data.router, prefix="/api/import", tags=["import"])
-    app.include_router(simple_leaderboard.router, prefix="/api/simple", tags=["simple"])
+    app.include_router(import_data.router, tags=["import"])  # prefix already in router
     
     logger.info("All routers loaded successfully")
 except ImportError as e:

@@ -8,6 +8,7 @@ import Leaderboards from './components/pages/Leaderboards';
 import Profile from './components/pages/Profile';
 import Teams from './components/pages/Teams';
 import About from './components/pages/About';
+import ImportData from './components/pages/ImportData';
 import { Login } from './components/auth/Login';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 
@@ -50,6 +51,14 @@ function App() {
                 element={
                   <ProtectedRoute requireProfile>
                     <Teams />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/import"
+                element={
+                  <ProtectedRoute requireProfile>
+                    <ImportData />
                   </ProtectedRoute>
                 }
               />
