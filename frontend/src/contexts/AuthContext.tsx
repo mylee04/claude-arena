@@ -86,7 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .single();
 
       // If profile doesn't exist, try to create it
-      if (!profile && session?.user) {
+      if (!profile) {
         console.log('Profile not found, attempting to create...');
         
         // Get the current auth user data
@@ -143,11 +143,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      toast.error('Failed to sign out');
-    } else {
-      toast.success('Signed out successfully');
+    try {
+      // Clear local session first
+      setSession(null);
+      setUserProfile(null);
+      
+      // Then sign out from Supabase
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Sign out error:', error);
+        toast.error('Failed to sign out');
+      } else {
+        toast.success('Signed out successfully');
+        navigate('/');
+      }
+    } catch (err) {
+      console.error('Unexpected sign out error:', err);
+      // Still navigate away even if there's an error
       navigate('/');
     }
   };

@@ -7,7 +7,19 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('Supabase environment variables are not set. Please check your .env.local file.')
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// Validate URL format
+let validatedUrl = supabaseUrl
+if (supabaseUrl && !supabaseUrl.startsWith('http')) {
+  validatedUrl = `https://${supabaseUrl}`
+}
+
+export const supabase = createClient(validatedUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true,
+  },
+})
 
 // Helper types for Claude Arena
 export interface User {
