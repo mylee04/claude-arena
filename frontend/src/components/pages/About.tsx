@@ -41,7 +41,7 @@ const About: React.FC = () => {
       status: 'current',
       title: 'MVP Launch',
       items: [
-        'Import Sniffly analytics data',
+        'Direct Claude Code logs import',
         'Basic leaderboard categories',
         'User profiles and achievements',
         'Team creation and management'

@@ -6,108 +6,108 @@ import json
 
 router = APIRouter(prefix="/api/import", tags=["import"])
 
-class Message(BaseModel):
-    type: str
-    message: Optional[Dict[str, Any]] = None
-    timestamp: str
-    sessionId: str = Field(..., alias="sessionId")
-    uuid: str
-    parentUuid: Optional[str] = Field(None, alias="parentUuid")
-    toolUseResult: Optional[Dict[str, Any]] = Field(None, alias="toolUseResult")
-    
-    class Config:
-        populate_by_name = True
 
-class ImportRequest(BaseModel):
-    messages: List[Message]
-    userId: str = Field(..., alias="user_id")
+# Claude Logs Import Models
+class ClaudeLogsImportRequest(BaseModel):
+    user_stats: Dict[str, Any]
+    tool_usage: Dict[str, int]
+    daily_activity: Dict[str, Dict[str, int]]
+    achievements: List[str]
+    leaderboard_stats: Dict[str, float]
+    conversations_included: bool = False
+    conversation_samples: Optional[List[Dict[str, Any]]] = []
+    total_conversations: Optional[int] = 0
+    user_id: Optional[str] = None
     
-    class Config:
-        populate_by_name = True
-
-class ImportStats(BaseModel):
-    total_messages: int
-    user_messages: int
-    assistant_messages: int
-    unique_sessions: int
-    tool_uses: Dict[str, int]
-    date_range: Dict[str, str]
-    hourly_activity: Dict[int, int]
-    
-class ImportResponse(BaseModel):
+class ClaudeLogsImportResponse(BaseModel):
     success: bool
     message: str
-    stats: ImportStats
+    user_id: str
+    stats_summary: Dict[str, Any]
+    leaderboard_rankings: Dict[str, int]
+    
 
-@router.post("/", response_model=ImportResponse)
-async def import_data(request: ImportRequest):
-    """Import JSONL data from Sniffly export"""
+@router.post("/claude-logs", response_model=ClaudeLogsImportResponse)
+async def import_claude_logs(request: ClaudeLogsImportRequest):
+    """Import parsed Claude Code logs data"""
     try:
-        messages = request.messages
+        # Extract key metrics
+        user_stats = request.user_stats
+        total_sessions = user_stats.get("total_sessions", 0)
+        total_tokens = user_stats.get("total_tokens_used", 0)
+        total_hours = user_stats.get("total_hours", 0)
         
-        if not messages:
-            raise HTTPException(status_code=400, detail="No messages provided")
+        if total_sessions == 0:
+            raise HTTPException(status_code=400, detail="No sessions found in import data")
         
-        # Calculate statistics
-        total_messages = len(messages)
-        user_messages = sum(1 for m in messages if m.type == "user")
-        assistant_messages = sum(1 for m in messages if m.type == "assistant")
-        
-        # Get unique sessions
-        unique_sessions = len(set(m.sessionId for m in messages))
-        
-        # Extract tool usage
-        tool_uses = {}
-        for msg in messages:
-            if msg.type == "assistant" and msg.message and "content" in msg.message:
-                content = msg.message.get("content", [])
-                for item in content:
-                    if isinstance(item, dict) and item.get("type") == "tool_use":
-                        tool_name = item.get("name", "unknown")
-                        tool_uses[tool_name] = tool_uses.get(tool_name, 0) + 1
-            
-            # Also check toolUseResult
-            if msg.toolUseResult:
-                # Count this as a tool use completion
-                pass
-        
-        # Calculate date range
-        timestamps = [datetime.fromisoformat(m.timestamp.replace('Z', '+00:00')) for m in messages]
-        date_range = {
-            "start": min(timestamps).isoformat() if timestamps else "",
-            "end": max(timestamps).isoformat() if timestamps else ""
+        # Calculate leaderboard rankings (mock for now)
+        leaderboard_rankings = {
+            "precisionist": calculate_ranking(request.leaderboard_stats.get("precisionist_score", 0)),
+            "speed_demon": calculate_ranking(request.leaderboard_stats.get("speed_demon_score", 0)),
+            "night_owl": calculate_ranking(request.leaderboard_stats.get("night_owl_score", 0)),
+            "tool_master": calculate_ranking(request.leaderboard_stats.get("tool_master_score", 0)),
+            "marathon_runner": calculate_ranking(request.leaderboard_stats.get("marathon_score", 0))
         }
         
-        # Calculate hourly activity
-        hourly_activity = {}
-        for ts in timestamps:
-            hour = ts.hour
-            hourly_activity[hour] = hourly_activity.get(hour, 0) + 1
+        # Create summary
+        stats_summary = {
+            "sessions": total_sessions,
+            "tokens": total_tokens,
+            "hours": total_hours,
+            "projects": user_stats.get("projects_count", 0),
+            "error_rate": user_stats.get("error_rate", 0),
+            "achievements_count": len(request.achievements),
+            "conversations_included": request.conversations_included,
+            "total_conversations": request.total_conversations if request.conversations_included else 0,
+            "top_tools": sorted(
+                request.tool_usage.items(), 
+                key=lambda x: x[1], 
+                reverse=True
+            )[:5]
+        }
         
-        # Create response stats
-        stats = ImportStats(
-            total_messages=total_messages,
-            user_messages=user_messages,
-            assistant_messages=assistant_messages,
-            unique_sessions=unique_sessions,
-            tool_uses=tool_uses,
-            date_range=date_range,
-            hourly_activity=hourly_activity
-        )
+        # TODO: Store in Supabase
+        # When storing, include:
+        # - Basic stats in users table
+        # - Achievements in user_achievements table
+        # - Conversations in user_conversations table (if included)
+        #   with privacy_level field (public/private/friends)
+        # For now, generate a mock user_id
+        user_id = request.user_id or f"user_{total_sessions}_{int(total_hours)}"
         
-        # TODO: Store data in Supabase
-        # For now, just return the statistics
-        
-        return ImportResponse(
+        return ClaudeLogsImportResponse(
             success=True,
-            message=f"Successfully imported {total_messages} messages from {unique_sessions} sessions",
-            stats=stats
+            message=f"Successfully imported {total_sessions} sessions with {total_hours:.1f} hours of usage",
+            user_id=user_id,
+            stats_summary=stats_summary,
+            leaderboard_rankings=leaderboard_rankings
         )
         
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.get("/status")
 async def import_status():
     """Check import endpoint status"""
-    return {"status": "ready", "version": "1.0.0"}
+    return {"status": "ready", "version": "2.0.0", "supports": ["claude-logs"]}
+
+
+def calculate_ranking(score: float) -> int:
+    """Calculate mock ranking based on score"""
+    # In production, this would query the database
+    # For now, return a mock ranking
+    if score >= 90:
+        return 1
+    elif score >= 80:
+        return 5
+    elif score >= 70:
+        return 10
+    elif score >= 60:
+        return 25
+    elif score >= 50:
+        return 50
+    else:
+        return 100

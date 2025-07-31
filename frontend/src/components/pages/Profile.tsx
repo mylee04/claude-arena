@@ -2,11 +2,12 @@ import React, { useState, useRef } from 'react';
 import { 
   Calendar, Code, Zap, Trophy, Wrench, Clock, TrendingUp,
   Camera, Save, Loader2, User, Settings, Shield, Award,
-  BarChart3, Flame, Edit2
+  BarChart3, Flame, Edit2, MessageSquare
 } from 'lucide-react';
 import { mockUsers, allAchievements } from '../../utils/mockData';
 import AchievementBadge from '../ui/AchievementBadge';
 import StatCard from '../ui/StatCard';
+import ConversationDisplay from '../ConversationDisplay';
 import { 
   BarChart, 
   Bar, 
@@ -30,7 +31,7 @@ const Profile: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'achievements' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'achievements' | 'conversations' | 'settings'>('overview');
   
   // Form data for editing
   const [formData, setFormData] = useState({
@@ -354,6 +355,17 @@ const Profile: React.FC = () => {
           Achievements
         </button>
         <button
+          onClick={() => setActiveTab('conversations')}
+          className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md transition-all ${
+            activeTab === 'conversations' 
+              ? 'bg-accent-orange text-white' 
+              : 'text-muted hover:text-white'
+          }`}
+        >
+          <MessageSquare className="w-4 h-4" />
+          Conversations
+        </button>
+        <button
           onClick={() => setActiveTab('settings')}
           className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md transition-all ${
             activeTab === 'settings' 
@@ -547,6 +559,14 @@ const Profile: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {activeTab === 'conversations' && (
+        <ConversationDisplay
+          conversations={user.conversations || []}
+          totalCount={user.conversationStats?.total || 0}
+          isOwner={true}
+        />
       )}
 
       {activeTab === 'settings' && (

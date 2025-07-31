@@ -54,8 +54,8 @@ class LeaderboardCategory(BaseModel):
     total_participants: Optional[int] = 0
     
 class ImportRequest(BaseModel):
-    """Request to import data from Sniffly or other sources"""
-    source_type: str = "sniffly"  # sniffly, csv, manual
+    """Request to import data from Claude logs"""
+    source_type: str = "claude-logs"  # claude-logs, manual
     data: Dict
     user_id: Optional[str] = None
     
