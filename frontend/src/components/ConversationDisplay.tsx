@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MessageSquare, Code, Lock, Globe, Users, Search, Filter } from 'lucide-react';
+import { MessageSquare, Code, Lock, Search } from 'lucide-react';
 
 interface Conversation {
   timestamp: string;

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Upload, Terminal, CheckCircle, AlertCircle, Loader2, BarChart3 } from 'lucide-react';
+import { Terminal, CheckCircle, AlertCircle, Loader2, BarChart3 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ClaudeLogsData {

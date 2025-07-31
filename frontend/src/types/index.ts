@@ -11,6 +11,8 @@ export interface User {
   achievements: Achievement[];
   rank: number;
   team?: Team;
+  conversations?: Conversation[];
+  conversationStats?: ConversationStats;
 }
 
 export interface UserStats {
@@ -100,4 +102,24 @@ export interface StatCard {
   change?: number;
   trend?: 'up' | 'down' | 'stable';
   icon?: string;
+}
+
+// Conversation Types
+export interface Conversation {
+  id?: string;
+  timestamp: string;
+  role: 'user' | 'assistant';
+  content: string;
+  project: string;
+  tools_used: string[];
+  privacy_level?: 'private' | 'friends' | 'public';
+}
+
+export interface ConversationStats {
+  total: number;
+  public: number;
+  friends: number;
+  private: number;
+  projects: string[];
+  toolsUsed: Record<string, number>;
 }
