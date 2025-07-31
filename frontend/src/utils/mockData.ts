@@ -1,4 +1,14 @@
-import type { User, LeaderboardEntry, LeaderboardCategory, Achievement, Activity, ChartDataPoint } from '../types';
+import type { 
+  User, 
+  LeaderboardEntry, 
+  LeaderboardCategory, 
+  Achievement, 
+  Activity, 
+  ChartDataPoint,
+  AgentPortfolio,
+  AgentOwnershipSummary,
+  XPEvent
+} from '../types';
 
 // Mock Users
 export const mockUsers: User[] = [
@@ -191,7 +201,7 @@ export const mockLeaderboardData: Record<string, LeaderboardEntry[]> = {
       score: 18,
       trend: 'up',
       trendValue: 2,
-      additionalStats: { toolsUsed: 18, favoriteTools: ['MultiEdit', 'Grep'] },
+      additionalStats: { toolsUsed: 18, favoriteTools: 'MultiEdit, Grep' },
     },
   ],
   'night-owl': [
@@ -322,4 +332,182 @@ export const allAchievements: Achievement[] = [
     icon: '💎',
     tier: 'silver',
   },
+];
+
+// Mock Agent Data
+export const mockAgentPortfolio: AgentPortfolio[] = [
+  {
+    agent_name: 'react-arena-specialist',
+    agent_display_name: 'React Arena Specialist',
+    current_level: 'master',
+    total_xp: 750,
+    total_usage: 89,
+    success_rate: 94.2,
+    is_favorite: true,
+    last_used: '2025-01-27T10:30:00Z',
+    achievements_count: 8,
+    privacy_level: 'public'
+  },
+  {
+    agent_name: 'python-elite',
+    agent_display_name: 'Python Elite',
+    current_level: 'expert',
+    total_xp: 420,
+    total_usage: 67,
+    success_rate: 91.8,
+    is_favorite: false,
+    last_used: '2025-01-26T14:22:00Z',
+    achievements_count: 5,
+    privacy_level: 'public'
+  },
+  {
+    agent_name: 'javascript-pro',
+    agent_display_name: 'JavaScript Pro',
+    current_level: 'specialist',
+    total_xp: 280,
+    total_usage: 43,
+    success_rate: 88.5,
+    is_favorite: false,
+    last_used: '2025-01-25T09:15:00Z',
+    achievements_count: 4,
+    privacy_level: 'friends'
+  },
+  {
+    agent_name: 'golang-pro',
+    agent_display_name: 'Golang Pro',
+    current_level: 'specialist',
+    total_xp: 190,
+    total_usage: 28,
+    success_rate: 85.7,
+    is_favorite: false,
+    last_used: '2025-01-24T16:45:00Z',
+    achievements_count: 3,
+    privacy_level: 'public'
+  },
+  {
+    agent_name: 'rust-pro',
+    agent_display_name: 'Rust Pro',
+    current_level: 'recruit',
+    total_xp: 75,
+    total_usage: 12,
+    success_rate: 83.3,
+    is_favorite: false,
+    last_used: '2025-01-22T11:30:00Z',
+    achievements_count: 1,
+    privacy_level: 'private'
+  },
+  {
+    agent_name: 'backend-architect',
+    agent_display_name: 'Backend Architect',
+    current_level: 'expert',
+    total_xp: 510,
+    total_usage: 56,
+    success_rate: 92.9,
+    is_favorite: false,
+    last_used: '2025-01-27T08:12:00Z',
+    achievements_count: 6,
+    privacy_level: 'public'
+  },
+  {
+    agent_name: 'devops-troubleshooter',
+    agent_display_name: 'DevOps Troubleshooter',
+    current_level: 'specialist',
+    total_xp: 340,
+    total_usage: 41,
+    success_rate: 89.0,
+    is_favorite: false,
+    last_used: '2025-01-26T19:20:00Z',
+    achievements_count: 4,
+    privacy_level: 'public'
+  },
+  {
+    agent_name: 'code-reviewer',
+    agent_display_name: 'Code Reviewer',
+    current_level: 'expert',
+    total_xp: 460,
+    total_usage: 52,
+    success_rate: 96.2,
+    is_favorite: true,
+    last_used: '2025-01-27T12:45:00Z',
+    achievements_count: 7,
+    privacy_level: 'public'
+  }
+];
+
+export const mockAgentSummary: AgentOwnershipSummary = {
+  totalAgents: mockAgentPortfolio.length,
+  totalXP: mockAgentPortfolio.reduce((sum, agent) => sum + agent.total_xp, 0),
+  highestLevel: 'master',
+  favoriteAgent: 'React Arena Specialist',
+  recentXPGains: [], // Will be populated by mockXPEvents
+  levelDistribution: {
+    recruit: 1,
+    specialist: 3,
+    expert: 3,
+    master: 1,
+    elite: 0
+  }
+};
+
+export const mockXPEvents: XPEvent[] = [
+  {
+    id: '1',
+    user_id: '1',
+    agent_name: 'react-arena-specialist',
+    event_type: 'task_completion',
+    base_points: 15,
+    bonus_points: 5,
+    total_points: 20,
+    metadata: { task: 'Build user profile tab', difficulty: 'complex' },
+    session_id: 'session-123',
+    created_at: '2025-01-27T10:30:00Z'
+  },
+  {
+    id: '2',
+    user_id: '1',
+    agent_name: 'code-reviewer',
+    event_type: 'achievement_unlock',
+    base_points: 50,
+    bonus_points: 0,
+    total_points: 50,
+    metadata: { achievement: 'perfect-reviewer', tier: 'gold' },
+    session_id: 'session-124',
+    created_at: '2025-01-27T12:45:00Z'
+  },
+  {
+    id: '3',
+    user_id: '1',
+    agent_name: 'python-elite',
+    event_type: 'streak_bonus',
+    base_points: 10,
+    bonus_points: 10,
+    total_points: 20,
+    metadata: { streak_days: 7 },
+    session_id: 'session-125',
+    created_at: '2025-01-26T14:22:00Z'
+  },
+  {
+    id: '4',
+    user_id: '1',
+    agent_name: 'backend-architect',
+    event_type: 'perfect_score',
+    base_points: 25,
+    bonus_points: 15,
+    total_points: 40,
+    metadata: { task: 'API optimization', efficiency: 100 },
+    session_id: 'session-126',
+    created_at: '2025-01-27T08:12:00Z'
+  },
+  {
+    id: '5',
+    user_id: '1',
+    agent_name: 'devops-troubleshooter',
+    event_type: 'task_completion',
+    base_points: 12,
+    bonus_points: 3,
+    total_points: 15,
+    metadata: { task: 'Docker optimization', time_saved: '45min' },
+    session_id: 'session-127',
+    created_at: '2025-01-26T19:20:00Z'
+  }
 ];

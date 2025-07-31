@@ -28,6 +28,18 @@ export interface User {
   email: string
   full_name?: string
   avatar_url?: string
+  bio?: string
+  github_username?: string
+  linkedin_url?: string
+  privacy_settings?: {
+    leaderboard: 'public' | 'friends' | 'private'
+    achievements: 'public' | 'friends' | 'private'
+    agents: 'public' | 'friends' | 'private'
+  }
+  total_xp: number
+  current_level: 'recruit' | 'specialist' | 'expert' | 'master' | 'elite'
+  streak_days: number
+  last_active_date?: string
   created_at: string
   updated_at?: string
 }
@@ -79,4 +91,132 @@ export interface TeamMember {
   role: 'owner' | 'admin' | 'member'
   joined_at: string
   user?: User
+}
+
+// New Agent System Types
+export interface XPEvent {
+  id: string
+  user_id: string
+  agent_name: string
+  event_type: 'task_completion' | 'achievement_unlock' | 'streak_bonus' | 'collaboration_bonus' | 'perfect_score'
+  base_points: number
+  bonus_points: number
+  total_points: number
+  metadata: Record<string, any>
+  session_id?: string
+  created_at: string
+}
+
+export interface UserAgent {
+  id: string
+  user_id: string
+  agent_name: string
+  agent_display_name?: string
+  agent_description?: string
+  is_favorite: boolean
+  total_usage: number
+  total_xp: number
+  current_level: 'recruit' | 'specialist' | 'expert' | 'master' | 'elite'
+  unlock_date: string
+  last_used?: string
+  privacy_level: 'public' | 'friends' | 'private'
+}
+
+export interface AgentStats {
+  id: string
+  user_agent_id: string
+  user_id: string
+  agent_name: string
+  success_rate: number
+  avg_completion_time?: string
+  fastest_completion?: string
+  total_tasks: number
+  successful_tasks: number
+  failed_tasks: number
+  sessions_count: number
+  total_time_spent?: string
+  streak_days: number
+  best_streak: number
+  shared_conversations: number
+  team_collaborations: number
+  first_use: string
+  last_updated: string
+}
+
+export interface AgentAchievement {
+  id: string
+  user_agent_id: string
+  user_id: string
+  agent_name: string
+  achievement_key: string
+  achievement_name: string
+  achievement_description?: string
+  achievement_tier: 'bronze' | 'silver' | 'gold' | 'platinum'
+  xp_reward: number
+  icon_url?: string
+  unlock_criteria: Record<string, any>
+  unlocked_at: string
+}
+
+export interface ConversationShare {
+  id: string
+  user_id: string
+  title: string
+  content: string
+  summary?: string
+  privacy_level: 'public' | 'friends' | 'private'
+  agents_used: string[]
+  xp_earned: number
+  tags: string[]
+  view_count: number
+  like_count: number
+  created_at: string
+  updated_at: string
+}
+
+export interface AgentPortfolio {
+  agent_name: string
+  agent_display_name?: string
+  current_level: 'recruit' | 'specialist' | 'expert' | 'master' | 'elite'
+  total_xp: number
+  total_usage: number
+  success_rate: number
+  is_favorite: boolean
+  last_used?: string
+  achievements_count: number
+}
+
+export interface AgentLeaderboardEntry {
+  user_id: string
+  username: string
+  avatar_url?: string
+  agent_level: 'recruit' | 'specialist' | 'expert' | 'master' | 'elite'
+  total_xp: number
+  success_rate: number
+  achievements_count: number
+  rank: number
+}
+
+// Database function result types
+export interface UserRank {
+  rank: number
+  score: number
+  total_participants: number
+}
+
+export interface UserRecentActivity {
+  activity_type: string
+  activity_description: string
+  activity_timestamp: string
+  metadata: Record<string, any>
+}
+
+export interface AchievementProgress {
+  achievement_type: string
+  bronze_unlocked: boolean
+  silver_unlocked: boolean
+  gold_unlocked: boolean
+  platinum_unlocked: boolean
+  next_tier?: 'bronze' | 'silver' | 'gold' | 'platinum'
+  progress_metadata: Record<string, any>
 }

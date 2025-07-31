@@ -1,4 +1,5 @@
-import { createContext, useContext, useEffect, useState } from "react";
+/* eslint-disable react-refresh/only-export-components */
+import { createContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase, type User as UserProfile } from "../lib/supabase";
 import { toast } from "sonner";
@@ -14,15 +15,7 @@ interface AuthContextType {
   authError: Error | null;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
-}
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
@@ -79,11 +72,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       // Get user profile
-      let { data: profile, error: profileError } = await supabase
+      const { data: initialProfile, error: profileError } = await supabase
         .from('users')
         .select('*')
         .eq('id', userId)
         .single();
+      
+      let profile = initialProfile;
 
       // If profile doesn't exist, try to create it
       if (!profile) {

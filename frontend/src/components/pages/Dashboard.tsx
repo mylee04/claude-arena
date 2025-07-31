@@ -10,6 +10,7 @@ import {
   mockChartData 
 } from '../../utils/mockData';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import '../../utils/date';
 
 const Dashboard: React.FC = () => {
   const currentUser = mockUsers[0]; // Mock current user
@@ -164,32 +165,5 @@ const Dashboard: React.FC = () => {
   );
 };
 
-// Helper to format relative time
-declare global {
-  interface Date {
-    toRelativeTime(): string;
-  }
-}
-
-Date.prototype.toRelativeTime = function() {
-  const seconds = Math.floor((Date.now() - this.getTime()) / 1000);
-  
-  let interval = seconds / 31536000;
-  if (interval > 1) return Math.floor(interval) + " years ago";
-  
-  interval = seconds / 2592000;
-  if (interval > 1) return Math.floor(interval) + " months ago";
-  
-  interval = seconds / 86400;
-  if (interval > 1) return Math.floor(interval) + " days ago";
-  
-  interval = seconds / 3600;
-  if (interval > 1) return Math.floor(interval) + " hours ago";
-  
-  interval = seconds / 60;
-  if (interval > 1) return Math.floor(interval) + " minutes ago";
-  
-  return "just now";
-};
 
 export default Dashboard;

@@ -2,12 +2,13 @@ import React, { useState, useRef } from 'react';
 import { 
   Calendar, Code, Zap, Trophy, Wrench, Clock, TrendingUp,
   Camera, Save, Loader2, User, Settings, Shield, Award,
-  BarChart3, Flame, Edit2, MessageSquare
+  BarChart3, Flame, Edit2, MessageSquare, Bot
 } from 'lucide-react';
 import { mockUsers, allAchievements } from '../../utils/mockData';
 import AchievementBadge from '../ui/AchievementBadge';
 import StatCard from '../ui/StatCard';
 import ConversationDisplay from '../ConversationDisplay';
+import AgentOwnershipPanel from '../ui/AgentOwnershipPanel';
 import { 
   BarChart, 
   Bar, 
@@ -20,18 +21,30 @@ import {
   Pie,
   Cell
 } from 'recharts';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
+import { useAgents } from '../../hooks/useAgents';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'sonner';
 import '../../utils/date';
 
 const Profile: React.FC = () => {
   const { user: authUser, userProfile, refreshUserData } = useAuth();
+  const { 
+    agents, 
+    summary, 
+    recentXPEvents, 
+    isLoading: agentsLoading,
+    error: agentsError,
+    refreshAgents,
+    toggleFavorite,
+    updatePrivacy 
+  } = useAgents();
+  
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'achievements' | 'conversations' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'achievements' | 'agents' | 'conversations' | 'settings'>('overview');
   
   // Form data for editing
   const [formData, setFormData] = useState({
@@ -124,9 +137,9 @@ const Profile: React.FC = () => {
       await refreshUserData();
       
       toast.success('Profile photo updated successfully');
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error uploading avatar:', error);
-      toast.error(error.message || 'Failed to upload profile photo');
+      toast.error(error instanceof Error ? error.message : 'Failed to upload profile photo');
     } finally {
       setUploadingAvatar(false);
     }
@@ -355,6 +368,17 @@ const Profile: React.FC = () => {
           Achievements
         </button>
         <button
+          onClick={() => setActiveTab('agents')}
+          className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md transition-all ${
+            activeTab === 'agents' 
+              ? 'bg-gradient-to-r from-accent-blue to-accent-purple text-white' 
+              : 'text-muted hover:text-white'
+          }`}
+        >
+          <Bot className="w-4 h-4" />
+          Agents
+        </button>
+        <button
           onClick={() => setActiveTab('conversations')}
           className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md transition-all ${
             activeTab === 'conversations' 
@@ -561,6 +585,71 @@ const Profile: React.FC = () => {
         </div>
       )}
 
+      {activeTab === 'agents' && (
+        <div className="space-y-6">
+          {agentsError && (
+            <div className="glass rounded-xl p-6 border border-accent-red/30">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-accent-red/20 flex items-center justify-center">
+                  <Bot className="w-5 h-5 text-accent-red" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-accent-red">Agent Data Error</h3>
+                  <p className="text-sm text-muted mt-1">{agentsError}</p>
+                </div>
+              </div>
+              <button 
+                onClick={refreshAgents}
+                className="mt-4 px-4 py-2 bg-accent-red/20 text-accent-red rounded-lg hover:bg-accent-red/30 transition-colors"
+              >
+                Retry Loading
+              </button>
+            </div>
+          )}
+
+          <AgentOwnershipPanel
+            agents={agents}
+            summary={summary || {
+              totalAgents: 0,
+              totalXP: 0,
+              highestLevel: 'recruit',
+              favoriteAgent: undefined,
+              recentXPGains: [],
+              levelDistribution: {
+                recruit: 0,
+                specialist: 0,
+                expert: 0,
+                master: 0,
+                elite: 0
+              }
+            }}
+            recentXPEvents={recentXPEvents}
+            isLoading={agentsLoading}
+            onAgentClick={(agent) => {
+              console.log('Agent clicked:', agent);
+              // TODO: Open agent detail modal or navigate to agent page
+              toast.info(`${agent.agent_display_name} details coming soon!`);
+            }}
+            onFavoriteToggle={async (agentName) => {
+              try {
+                await toggleFavorite(agentName);
+                toast.success('Favorite status updated');
+              } catch (error) {
+                toast.error('Failed to update favorite status');
+              }
+            }}
+            onPrivacyChange={async (agentName, privacy) => {
+              try {
+                await updatePrivacy(agentName, privacy);
+                toast.success(`Privacy updated to ${privacy}`);
+              } catch (error) {
+                toast.error('Failed to update privacy settings');
+              }
+            }}
+          />
+        </div>
+      )}
+
       {activeTab === 'conversations' && (
         <ConversationDisplay
           conversations={user.conversations || []}
@@ -625,6 +714,69 @@ const Profile: React.FC = () => {
                 </div>
                 <input type="checkbox" className="toggle" />
               </label>
+            </div>
+          </div>
+
+          {/* Agent Privacy Settings */}
+          <div className="glass rounded-xl p-6">
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <Bot className="w-5 h-5" />
+              Agent Privacy Settings
+            </h3>
+            <div className="space-y-4">
+              <div className="border-b border-border pb-4">
+                <p className="font-medium mb-2">Default Agent Privacy</p>
+                <p className="text-sm text-muted mb-3">Set the default privacy level for new agents</p>
+                <select 
+                  className="w-full bg-gray-700 text-white rounded-lg px-3 py-2 border border-gray-600 focus:border-accent-blue focus:outline-none"
+                  defaultValue="public"
+                >
+                  <option value="public">Public - Visible to everyone</option>
+                  <option value="friends">Friends - Visible to friends only</option>
+                  <option value="private">Private - Only visible to you</option>
+                </select>
+              </div>
+              
+              <div className="border-b border-border pb-4">
+                <p className="font-medium mb-2">Agent Stats Visibility</p>
+                <p className="text-sm text-muted mb-3">Control who can see your agent performance metrics</p>
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2">
+                    <input type="radio" name="agentStats" value="public" className="text-accent-blue" defaultChecked />
+                    <span className="text-sm">Public - Anyone can see stats</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input type="radio" name="agentStats" value="friends" className="text-accent-blue" />
+                    <span className="text-sm">Friends - Friends can see stats</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input type="radio" name="agentStats" value="private" className="text-accent-blue" />
+                    <span className="text-sm">Private - Only you can see stats</span>
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <p className="font-medium mb-2">Individual Agent Privacy</p>
+                <p className="text-sm text-muted mb-3">
+                  You can set individual privacy levels for each agent in the Agents tab.
+                  {agents.length > 0 && (
+                    <span className="block mt-1">
+                      You have {agents.filter(a => a.privacy_level === 'public').length} public, {' '}
+                      {agents.filter(a => a.privacy_level === 'friends').length} friends-only, and {' '}
+                      {agents.filter(a => a.privacy_level === 'private').length} private agents.
+                    </span>
+                  )}
+                </p>
+                {agents.length > 0 && (
+                  <button 
+                    onClick={() => setActiveTab('agents')}
+                    className="px-4 py-2 bg-accent-blue text-white rounded-lg hover:bg-accent-blue/80 transition-colors text-sm"
+                  >
+                    Manage Agent Privacy
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 

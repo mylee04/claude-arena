@@ -43,7 +43,7 @@ export interface LeaderboardEntry {
   score: number;
   trend: 'up' | 'down' | 'stable';
   trendValue?: number;
-  additionalStats?: Record<string, any>;
+  additionalStats?: Record<string, string | number | boolean>;
 }
 
 export interface LeaderboardCategory {
@@ -86,7 +86,7 @@ export interface Activity {
   type: 'achievement' | 'milestone' | 'streak' | 'rank_up';
   description: string;
   timestamp: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, string | number | boolean>;
 }
 
 // Chart Types
@@ -122,4 +122,95 @@ export interface ConversationStats {
   private: number;
   projects: string[];
   toolsUsed: Record<string, number>;
+}
+
+// Agent Types
+export type AgentLevel = 'recruit' | 'specialist' | 'expert' | 'master' | 'elite';
+export type PrivacyLevel = 'public' | 'friends' | 'private';
+export type XPEventType = 'task_completion' | 'achievement_unlock' | 'streak_bonus' | 'collaboration_bonus' | 'perfect_score';
+
+export interface UserAgent {
+  id: string;
+  user_id: string;  
+  agent_name: string;
+  agent_display_name: string;
+  agent_description?: string;
+  is_favorite: boolean;
+  total_usage: number;
+  total_xp: number;
+  current_level: AgentLevel;
+  unlock_date: string;
+  last_used?: string;
+  privacy_level: PrivacyLevel;
+}
+
+export interface AgentStats {
+  id: string;
+  user_agent_id: string;
+  user_id: string;
+  agent_name: string;
+  success_rate: number;
+  avg_completion_time?: string;
+  fastest_completion?: string;
+  total_tasks: number;
+  successful_tasks: number;
+  failed_tasks: number;
+  sessions_count: number;
+  total_time_spent?: string;
+  streak_days: number;
+  best_streak: number;
+  shared_conversations: number;
+  team_collaborations: number;
+  first_use: string;
+  last_updated: string;
+}
+
+export interface AgentAchievement {
+  id: string;
+  user_agent_id: string;
+  user_id: string;
+  agent_name: string;
+  achievement_key: string;
+  achievement_name: string;
+  achievement_description?: string;
+  achievement_tier: 'bronze' | 'silver' | 'gold' | 'platinum';
+  xp_reward: number;
+  icon_url?: string;
+  unlock_criteria: Record<string, any>;
+  unlocked_at: string;
+}
+
+export interface XPEvent {
+  id: string;
+  user_id: string;
+  agent_name: string;
+  event_type: XPEventType;
+  base_points: number;
+  bonus_points: number;
+  total_points: number;
+  metadata: Record<string, any>;
+  session_id?: string;
+  created_at: string;
+}
+
+export interface AgentPortfolio {
+  agent_name: string;
+  agent_display_name: string;
+  current_level: AgentLevel;
+  total_xp: number;
+  total_usage: number;
+  success_rate: number;
+  is_favorite: boolean;
+  last_used?: string;
+  achievements_count: number;
+  privacy_level?: PrivacyLevel;
+}
+
+export interface AgentOwnershipSummary {
+  totalAgents: number;
+  totalXP: number;
+  highestLevel: AgentLevel;
+  favoriteAgent?: string;
+  recentXPGains: XPEvent[];
+  levelDistribution: Record<AgentLevel, number>;
 }

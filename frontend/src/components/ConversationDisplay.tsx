@@ -1,13 +1,6 @@
 import React, { useState } from 'react';
 import { MessageSquare, Code, Lock, Search } from 'lucide-react';
-
-interface Conversation {
-  timestamp: string;
-  role: 'user' | 'assistant';
-  content: string;
-  project: string;
-  tools_used: string[];
-}
+import type { Conversation } from '../types';
 
 interface ConversationDisplayProps {
   conversations: Conversation[];
