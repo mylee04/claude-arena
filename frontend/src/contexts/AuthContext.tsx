@@ -25,26 +25,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [authError, setAuthError] = useState<Error | null>(null);
 
   useEffect(() => {
-    // Get session once on mount
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('Initial session:', session?.user?.id || 'none');
-      setSession(session);
-      if (session?.user) {
-        loadUserData(session.user.id);
-      } else {
-        setLoading(false);
+    let mounted = true;
+
+    const initializeAuth = async () => {
+      try {
+        // Get session once on mount
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Error getting session:', error);
+          setAuthError(error);
+          if (mounted) setLoading(false);
+          return;
+        }
+
+        console.log('Initial session:', session?.user?.id || 'none');
+        
+        if (mounted) {
+          setSession(session);
+          if (session?.user) {
+            await loadUserData(session.user.id);
+          } else {
+            setLoading(false);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to initialize auth:', error);
+        setAuthError(error as Error);
+        if (mounted) setLoading(false);
       }
-    });
+    };
 
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       console.log('Auth state changed:', _event, session?.user?.id || 'none');
+      
+      if (!mounted) return;
+      
       setSession(session);
       
       if (session?.user) {
-        loadUserData(session.user.id);
+        await loadUserData(session.user.id);
       } else {
         // Clear user data on sign out
         setUserProfile(null);
@@ -52,7 +75,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
-    return () => subscription.unsubscribe();
+    initializeAuth();
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const loadUserData = async (userId: string) => {

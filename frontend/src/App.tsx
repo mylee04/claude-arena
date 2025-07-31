@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { Toaster } from 'sonner';
+import ErrorBoundary from './components/ErrorBoundary';
 import Layout from './components/layout/Layout';
 import Dashboard from './components/pages/Dashboard';
 import Leaderboards from './components/pages/Leaderboards';
@@ -12,11 +13,15 @@ import ImportData from './components/pages/ImportData';
 import { Login } from './components/auth/Login';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 
+// Temporary debug import - REMOVE AFTER DEBUGGING
+import './lib/supabase-debug';
+
 function App() {
   return (
-    <ThemeProvider defaultTheme="dark">
-      <Router>
-        <AuthProvider>
+    <ErrorBoundary>
+      <ThemeProvider defaultTheme="dark">
+        <Router>
+          <AuthProvider>
           <Toaster 
             position="top-right" 
             toastOptions={{
@@ -64,9 +69,10 @@ function App() {
               />
             </Route>
           </Routes>
-        </AuthProvider>
-      </Router>
-    </ThemeProvider>
+          </AuthProvider>
+        </Router>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
 

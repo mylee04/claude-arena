@@ -1,23 +1,53 @@
 import { createClient } from '@supabase/supabase-js'
+import { config } from '../config/env'
+import { validateEnvironment, logEnvironmentStatus } from '../utils/envValidation'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || ''
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
+// Validate environment on import
+const envValidation = validateEnvironment()
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn('Supabase environment variables are not set. Please check your .env.local file.')
+// Log environment status in development
+if (import.meta.env.DEV) {
+  logEnvironmentStatus()
 }
+
+// Throw early if configuration is invalid
+if (!envValidation.isValid) {
+  const errorMessage = `Claude Arena Configuration Error:\n${envValidation.errors.join('\n')}`
+  console.error('🚨 CONFIGURATION ERROR:', errorMessage)
+  throw new Error(errorMessage)
+}
+
+const supabaseUrl = config.supabase.url
+const supabaseAnonKey = config.supabase.anonKey
 
 // Validate URL format
 let validatedUrl = supabaseUrl
-if (supabaseUrl && !supabaseUrl.startsWith('http')) {
+if (!supabaseUrl.startsWith('http')) {
   validatedUrl = `https://${supabaseUrl}`
 }
+
+console.log('🔗 Supabase URL:', validatedUrl)
+console.log('🔑 Supabase Key:', `${supabaseAnonKey.substring(0, 20)}...${supabaseAnonKey.substring(supabaseAnonKey.length - 10)}`)
 
 export const supabase = createClient(validatedUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: true,
+    flowType: 'pkce',
+    storage: window.localStorage,
+    storageKey: 'claude-arena-auth-token',
+    debug: import.meta.env.DEV,
+  },
+  global: {
+    headers: {
+      'X-Client-Info': 'claude-arena-frontend',
+    },
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 10,
+    },
   },
 })
 

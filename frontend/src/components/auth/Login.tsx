@@ -11,28 +11,47 @@ export function Login() {
     try {
       setLoading(true);
       setLoadingProvider(provider);
-      console.log('Starting OAuth login with:', provider);
+      console.log('🚀 Starting OAuth login with:', provider);
+      
+      // Validate current URL for redirect
+      const currentUrl = window.location.origin;
+      console.log('🔗 Redirect URL:', currentUrl);
       
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${window.location.origin}/`,
-          queryParams: {
+          redirectTo: `${currentUrl}/`,
+          queryParams: provider === 'google' ? {
             access_type: 'offline',
             prompt: 'consent',
-          },
+          } : undefined,
         },
       });
 
-      console.log('OAuth response:', { data, error });
+      console.log('✅ OAuth response:', { data, error });
       
       if (error) {
-        console.error('OAuth error details:', error);
+        console.error('❌ OAuth error details:', error);
+        if (error.message.includes('Invalid value')) {
+          toast.error('Authentication service configuration error. Please check your Supabase setup.');
+        } else {
+          toast.error(`Failed to login with ${provider}: ${error.message}`);
+        }
         throw error;
       }
+
+      // OAuth redirect will happen automatically, no need to do anything else
+      console.log('🔄 Redirecting to OAuth provider...');
+      
     } catch (error) {
-      console.error('OAuth login error:', error);
-      toast.error(`Failed to login with ${provider}`);
+      console.error('❌ OAuth login error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      
+      if (errorMessage.includes('Invalid value')) {
+        toast.error('Configuration Error: Invalid Supabase URL or key. Please check your environment variables.');
+      } else {
+        toast.error(`Failed to login with ${provider}: ${errorMessage}`);
+      }
     } finally {
       setLoading(false);
       setLoadingProvider(null);
