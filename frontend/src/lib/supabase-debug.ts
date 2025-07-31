@@ -68,11 +68,15 @@ try {
   
 } catch (error) {
   console.error('❌ Failed to create Supabase client:', error)
-  console.error('Error details:', {
-    message: error.message,
-    stack: error.stack,
-    name: error.name
-  })
+  if (error instanceof Error) {
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    })
+  } else {
+    console.error('Error details:', error)
+  }
 }
 
 console.groupEnd()
