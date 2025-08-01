@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { config } from '../config/env'
 import { validateEnvironment, logEnvironmentStatus } from '../utils/envValidation'
+import { validateSupabaseUrl } from '../utils/oauthDebug'
 
 // Validate environment on import
 const envValidation = validateEnvironment()
@@ -26,8 +27,16 @@ if (!supabaseUrl.startsWith('http')) {
   validatedUrl = `https://${supabaseUrl}`
 }
 
+// Additional URL validation
+const urlValidation = validateSupabaseUrl(validatedUrl)
+if (!urlValidation.isValid) {
+  console.error('🚨 Supabase URL validation failed:', urlValidation.errors)
+  urlValidation.errors.forEach(error => console.error(`  - ${error}`))
+}
+
 console.log('🔗 Supabase URL:', validatedUrl)
 console.log('🔑 Supabase Key:', `${supabaseAnonKey.substring(0, 20)}...${supabaseAnonKey.substring(supabaseAnonKey.length - 10)}`)
+console.log('✅ URL Validation:', urlValidation.isValid ? 'PASSED' : 'FAILED')
 
 export const supabase = createClient(validatedUrl, supabaseAnonKey, {
   auth: {
@@ -38,10 +47,56 @@ export const supabase = createClient(validatedUrl, supabaseAnonKey, {
     storage: window.localStorage,
     storageKey: 'claude-arena-auth-token',
     debug: import.meta.env.DEV,
+    // Add specific configurations for OAuth callback handling
   },
   global: {
     headers: {
       'X-Client-Info': 'claude-arena-frontend',
+      'apikey': supabaseAnonKey,
+    },
+    fetch: (input, options = {}) => {
+      // Add custom fetch wrapper to handle OAuth callback errors
+      const url = typeof input === 'string' ? input : (input instanceof Request ? input.url : String(input));
+      console.log('🌐 Supabase fetch:', url);
+      
+      // Validate URL before making the request
+      try {
+        const urlObj = new URL(url);
+        // Ensure the URL is valid and has required components
+        if (!urlObj.protocol || !urlObj.hostname) {
+          throw new Error('Invalid URL format');
+        }
+      } catch (error) {
+        console.error('❌ Invalid URL in Supabase fetch:', url, error);
+        return Promise.reject(new Error(`Invalid URL: ${url}`));
+      }
+      
+      // Add timeout and error handling
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      
+      const enhancedOptions = {
+        ...options,
+        signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json',
+          ...options.headers,
+        },
+      };
+      
+      return fetch(input, enhancedOptions)
+        .then(response => {
+          clearTimeout(timeoutId);
+          if (!response.ok && response.status >= 400) {
+            console.error('❌ Supabase API error:', response.status, response.statusText);
+          }
+          return response;
+        })
+        .catch(error => {
+          clearTimeout(timeoutId);
+          console.error('❌ Supabase fetch error:', error);
+          throw error;
+        });
     },
   },
   realtime: {

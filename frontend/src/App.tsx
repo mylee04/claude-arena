@@ -11,10 +11,8 @@ import Teams from './components/pages/Teams';
 import About from './components/pages/About';
 import ImportData from './components/pages/ImportData';
 import { Login } from './components/auth/Login';
+import { OAuthCallback } from './components/auth/OAuthCallback';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
-
-// Temporary debug import - REMOVE AFTER DEBUGGING
-import './lib/supabase-debug';
 
 function App() {
   return (
@@ -35,6 +33,7 @@ function App() {
           <Routes>
             {/* Public routes */}
             <Route path="/login" element={<Login />} />
+            <Route path="/auth/callback" element={<OAuthCallback />} />
             
             {/* Routes with layout */}
             <Route element={<Layout />}>

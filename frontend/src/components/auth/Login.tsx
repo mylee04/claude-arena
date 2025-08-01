@@ -13,14 +13,24 @@ export function Login() {
       setLoadingProvider(provider);
       console.log('🚀 Starting OAuth login with:', provider);
       
-      // Validate current URL for redirect
-      const currentUrl = window.location.origin;
-      console.log('🔗 Redirect URL:', currentUrl);
+      // Get current origin and construct proper callback URL
+      const currentOrigin = window.location.origin;
+      const callbackUrl = `${currentOrigin}/auth/callback`;
+      console.log('🔗 OAuth callback URL:', callbackUrl);
+      
+      // Validate URL format before proceeding
+      try {
+        new URL(callbackUrl);
+      } catch (urlError) {
+        console.error('❌ Invalid callback URL:', callbackUrl, urlError);
+        toast.error('Invalid callback URL configuration');
+        return;
+      }
       
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${currentUrl}/`,
+          redirectTo: callbackUrl,
           queryParams: provider === 'google' ? {
             access_type: 'offline',
             prompt: 'consent',

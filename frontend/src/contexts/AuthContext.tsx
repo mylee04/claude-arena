@@ -29,12 +29,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const initializeAuth = async () => {
       try {
+        // Check for OAuth callback errors in URL before initializing
+        const urlParams = new URLSearchParams(window.location.search);
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        
+        const authError = urlParams.get('error') || hashParams.get('error');
+        const authErrorDescription = urlParams.get('error_description') || hashParams.get('error_description');
+        
+        if (authError) {
+          console.error('❌ OAuth error detected in URL:', authError, authErrorDescription);
+          const oauthError = new Error(`OAuth Error: ${authErrorDescription || authError}`);
+          setAuthError(oauthError);
+          if (mounted) setLoading(false);
+          return;
+        }
+
         // Get session once on mount
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
           console.error('Error getting session:', error);
-          setAuthError(error);
+          // Check if this is the "Invalid value" fetch error
+          if (error.message.includes('Invalid value') || error.message.includes('fetch')) {
+            console.error('🚨 Detected fetch/URL validation error, likely OAuth callback issue');
+            const enhancedError = new Error('OAuth callback processing failed. Please try signing in again.');
+            setAuthError(enhancedError);
+          } else {
+            setAuthError(error);
+          }
           if (mounted) setLoading(false);
           return;
         }
@@ -51,7 +73,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (error) {
         console.error('Failed to initialize auth:', error);
-        setAuthError(error as Error);
+        // Enhanced error handling for OAuth callback issues
+        if (error instanceof Error && error.message.includes('Invalid value')) {
+          const enhancedError = new Error('OAuth authentication failed due to invalid parameters. Please try again.');
+          setAuthError(enhancedError);
+        } else {
+          setAuthError(error as Error);
+        }
         if (mounted) setLoading(false);
       }
     };
