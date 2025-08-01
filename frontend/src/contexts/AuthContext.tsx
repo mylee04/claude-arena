@@ -62,29 +62,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               if (fallbackSession?.access_token && fallbackSession?.user) {
                 console.log('📋 Found fallback session, attempting to restore...');
                 
-                // Try to restore the session using the stored tokens
-                const { data: restoredData, error: restoreError } = await supabase.auth.setSession({
-                  access_token: fallbackSession.access_token,
-                  refresh_token: fallbackSession.refresh_token || '',
-                });
+                // Since setSession causes fetch errors, directly use the stored session
+                console.log('✅ Found fallback session, using it directly');
                 
-                if (!restoreError && restoredData.session) {
-                  console.log('✅ Successfully restored session from fallback storage');
-                  
-                  if (mounted) {
-                    setSession(restoredData.session);
-                    if (restoredData.session.user) {
-                      await loadUserData(restoredData.session.user.id);
-                    } else {
-                      setLoading(false);
-                    }
+                // Create a session object from the stored data
+                const restoredSession = {
+                  access_token: fallbackSession.access_token,
+                  token_type: fallbackSession.token_type || 'bearer',
+                  expires_at: fallbackSession.expires_at,
+                  expires_in: fallbackSession.expires_in || 3600,
+                  refresh_token: fallbackSession.refresh_token || '',
+                  user: fallbackSession.user
+                };
+                
+                if (mounted) {
+                  setSession(restoredSession);
+                  if (restoredSession.user) {
+                    // For now, create a basic user profile
+                    setUserProfile({
+                      id: restoredSession.user.id,
+                      email: restoredSession.user.email,
+                      username: restoredSession.user.email?.split('@')[0] || 'user',
+                      total_xp: 0,
+                      current_level: 'recruit',
+                      streak_days: 0,
+                      created_at: new Date().toISOString()
+                    });
                   }
-                  return;
-                } else {
-                  console.warn('⚠️ Failed to restore session from fallback:', restoreError);
-                  // Clean up invalid fallback session
-                  localStorage.removeItem('claude-arena-auth-token');
+                  setLoading(false);
                 }
+                return;
               }
             }
           } catch (fallbackError) {
@@ -176,9 +183,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     initializeAuth();
+    
+    // Add a delayed check for fallback session (in case OAuth callback is still processing)
+    const fallbackTimer = setTimeout(() => {
+      if (mounted && !session) {
+        console.log('⏱️ Performing delayed fallback session check...');
+        
+        try {
+          const storedAuth = localStorage.getItem('claude-arena-auth-token');
+          if (storedAuth) {
+            const { currentSession } = JSON.parse(storedAuth);
+            if (currentSession?.access_token && currentSession?.user) {
+              console.log('✅ Found fallback session in delayed check');
+              
+              const restoredSession = {
+                access_token: currentSession.access_token,
+                token_type: currentSession.token_type || 'bearer',
+                expires_at: currentSession.expires_at,
+                expires_in: currentSession.expires_in || 3600,
+                refresh_token: currentSession.refresh_token || '',
+                user: currentSession.user
+              };
+              
+              setSession(restoredSession);
+              if (restoredSession.user) {
+                setUserProfile({
+                  id: restoredSession.user.id,
+                  email: restoredSession.user.email,
+                  username: restoredSession.user.email?.split('@')[0] || 'user',
+                  total_xp: 0,
+                  current_level: 'recruit',
+                  streak_days: 0,
+                  created_at: new Date().toISOString()
+                });
+              }
+              setLoading(false);
+            }
+          }
+        } catch (error) {
+          console.error('Error in delayed fallback check:', error);
+        }
+      }
+    }, 2000);
 
     return () => {
       mounted = false;
+      clearTimeout(fallbackTimer);
       subscription.unsubscribe();
     };
   }, []);
