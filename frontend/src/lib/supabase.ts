@@ -52,51 +52,6 @@ export const supabase = createClient(validatedUrl, supabaseAnonKey, {
   global: {
     headers: {
       'X-Client-Info': 'claude-arena-frontend',
-      'apikey': supabaseAnonKey,
-    },
-    fetch: (input, options = {}) => {
-      // Add custom fetch wrapper to handle OAuth callback errors
-      const url = typeof input === 'string' ? input : (input instanceof Request ? input.url : String(input));
-      console.log('🌐 Supabase fetch:', url);
-      
-      // Validate URL before making the request
-      try {
-        const urlObj = new URL(url);
-        // Ensure the URL is valid and has required components
-        if (!urlObj.protocol || !urlObj.hostname) {
-          throw new Error('Invalid URL format');
-        }
-      } catch (error) {
-        console.error('❌ Invalid URL in Supabase fetch:', url, error);
-        return Promise.reject(new Error(`Invalid URL: ${url}`));
-      }
-      
-      // Add timeout and error handling
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-      
-      const enhancedOptions = {
-        ...options,
-        signal: controller.signal,
-        headers: {
-          'Content-Type': 'application/json',
-          ...options.headers,
-        },
-      };
-      
-      return fetch(input, enhancedOptions)
-        .then(response => {
-          clearTimeout(timeoutId);
-          if (!response.ok && response.status >= 400) {
-            console.error('❌ Supabase API error:', response.status, response.statusText);
-          }
-          return response;
-        })
-        .catch(error => {
-          clearTimeout(timeoutId);
-          console.error('❌ Supabase fetch error:', error);
-          throw error;
-        });
     },
   },
   realtime: {
