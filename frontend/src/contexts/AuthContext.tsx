@@ -6,6 +6,9 @@ import { toast } from "sonner";
 import type { User, Session } from "@supabase/supabase-js";
 import { useOAuthErrorHandler } from "../components/auth/OAuthErrorHandler";
 import { quickOAuthDiagnosis } from "../utils/oauthDiagnostics";
+import { logSessionDebugInfo, startSessionMonitoring } from "../utils/sessionDebug";
+import { config } from "../config/env";
+import { syncSessionWithSupabase } from "../utils/sessionSync";
 
 interface AuthContextType {
   user: User | null;
@@ -19,6 +22,14 @@ interface AuthContextType {
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+interface UserProfileCreationData {
+  id: string;
+  email: string;
+  full_name?: string;
+  username?: string;
+  avatar_url?: string;
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
   const [session, setSession] = useState<Session | null>(null);
@@ -29,9 +40,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
+    let sessionMonitorCleanup: (() => void) | null = null;
 
     const initializeAuth = async () => {
       try {
+        // Start session monitoring in development
+        if (config.debug.session && config.environment.isDev) {
+          sessionMonitorCleanup = startSessionMonitoring();
+        }
+
+        // Log initial session debug info
+        await logSessionDebugInfo();
+
         // Check for OAuth callback errors in URL before initializing
         const urlParams = new URLSearchParams(window.location.search);
         const hashParams = new URLSearchParams(window.location.hash.substring(1));
@@ -60,7 +80,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (storedAuth) {
               const parsedAuth = JSON.parse(storedAuth);
               console.log('📋 Initial check - Structure:', Object.keys(parsedAuth));
-              const fallbackSession = parsedAuth.currentSession;
+              
+              // Handle both storage formats - direct session or wrapped in currentSession
+              const fallbackSession = parsedAuth.currentSession || parsedAuth;
               
               if (fallbackSession?.access_token && fallbackSession?.user) {
                 console.log('📋 Found fallback session, attempting to restore...');
@@ -79,18 +101,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 };
                 
                 if (mounted) {
+                  // Try to sync with Supabase first
+                  console.log('🔄 Attempting to sync fallback session with Supabase...');
+                  const syncResult = await syncSessionWithSupabase();
+                  
+                  if (syncResult.success) {
+                    console.log('✅ Session synced with Supabase');
+                    // Re-fetch the session from Supabase
+                    const { data: { session: syncedSession } } = await supabase.auth.getSession();
+                    if (syncedSession) {
+                      setSession(syncedSession);
+                      if (syncedSession.user) {
+                        await loadUserData(syncedSession.user);
+                      }
+                      return;
+                    }
+                  }
+                  
+                  // If sync fails, use the fallback session anyway
+                  console.log('⚠️ Sync failed, using fallback session directly');
                   setSession(restoredSession);
                   if (restoredSession.user) {
-                    // For now, create a basic user profile
-                    setUserProfile({
-                      id: restoredSession.user.id,
-                      email: restoredSession.user.email,
-                      username: restoredSession.user.email?.split('@')[0] || 'user',
-                      total_xp: 0,
-                      current_level: 'recruit',
-                      streak_days: 0,
-                      created_at: new Date().toISOString()
-                    });
+                    // Create temporary profile for fallback session
+                    createTemporaryProfile(restoredSession.user);
                   }
                   setLoading(false);
                 }
@@ -135,7 +168,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (mounted) {
           setSession(session);
           if (session?.user) {
-            await loadUserData(session.user.id);
+            await loadUserData(session.user);
           } else {
             setLoading(false);
           }
@@ -177,7 +210,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(session);
       
       if (session?.user) {
-        await loadUserData(session.user.id);
+        await loadUserData(session.user);
       } else {
         // Clear user data on sign out
         setUserProfile(null);
@@ -200,7 +233,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const parsed = JSON.parse(storedAuth);
             console.log('📋 Parsed auth structure:', Object.keys(parsed));
             
-            const { currentSession } = parsed;
+            // Handle both storage formats - direct session or wrapped in currentSession
+            const currentSession = parsed.currentSession || parsed;
             console.log('🔍 Current session exists:', !!currentSession);
             console.log('🔑 Has access token:', !!currentSession?.access_token);
             console.log('👤 Has user:', !!currentSession?.user);
@@ -219,15 +253,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               
               setSession(restoredSession);
               if (restoredSession.user) {
-                setUserProfile({
-                  id: restoredSession.user.id,
-                  email: restoredSession.user.email,
-                  username: restoredSession.user.email?.split('@')[0] || 'user',
-                  total_xp: 0,
-                  current_level: 'recruit',
-                  streak_days: 0,
-                  created_at: new Date().toISOString()
-                });
+                createTemporaryProfile(restoredSession.user);
               }
               setLoading(false);
             }
@@ -242,89 +268,158 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       mounted = false;
       clearTimeout(fallbackTimer);
       subscription.unsubscribe();
+      
+      // Cleanup session monitoring
+      if (sessionMonitorCleanup) {
+        sessionMonitorCleanup();
+      }
     };
   }, []);
 
-  const loadUserData = async (userId: string) => {
+  /**
+   * Improved user data loading with proper error handling
+   * No longer relies on risky table existence checks
+   */
+  const loadUserData = async (authUser: User) => {
     try {
       setAuthError(null);
-      
-      // Simple table check
-      const { error: checkError } = await supabase
-        .from('users')
-        .select('id')
-        .limit(1);
-      
-      if (checkError) {
-        console.log('Database not set up yet');
-        setLoading(false);
-        return;
-      }
+      console.log('Loading user profile for:', authUser.id);
 
-      // Get user profile
-      const { data: initialProfile, error: profileError } = await supabase
+      // Try to get existing user profile
+      const { data: existingProfile, error: profileError } = await supabase
         .from('users')
         .select('*')
-        .eq('id', userId)
-        .single();
-      
-      let profile = initialProfile;
+        .eq('id', authUser.id)
+        .maybeSingle(); // Use maybeSingle to handle no results gracefully
 
-      // If profile doesn't exist, try to create it
-      if (!profile) {
-        console.log('Profile not found, attempting to create...');
+      // Handle different scenarios
+      if (profileError) {
+        console.error('Error fetching user profile:', profileError);
         
-        // Get the current auth user data
-        const { data: { user: authUser } } = await supabase.auth.getUser();
-        
-        if (authUser) {
-          // Extract username from email or OAuth provider data
-          const emailUsername = authUser.email?.split('@')[0] || 'user';
-          const providerUsername = authUser.user_metadata?.user_name || 
-                                  authUser.user_metadata?.preferred_username ||
-                                  authUser.user_metadata?.nickname;
-          
-          const username = providerUsername || emailUsername;
-          
-          // Try to create the profile
-          const { data: newProfile, error: createError } = await supabase
-            .from('users')
-            .insert({
-              id: authUser.id,
-              email: authUser.email!,
-              username: username,
-              full_name: authUser.user_metadata?.full_name || 
-                        authUser.user_metadata?.name || 
-                        username,
-              avatar_url: authUser.user_metadata?.avatar_url || 
-                         authUser.user_metadata?.picture || ''
-            })
-            .select()
-            .single();
-          
-          if (!createError && newProfile) {
-            profile = newProfile;
-            toast.success('Welcome to Claude Arena!');
-          } else if (createError) {
-            console.error('Error creating user profile:', createError);
-            setAuthError(createError);
-            toast.error('Failed to create user profile');
-          }
+        // If it's a permission error (42501) or policy violation, try to create profile
+        if (profileError.code === '42501' || profileError.code === 'PGRST000' || profileError.message?.includes('policy')) {
+          console.log('Permission error, attempting to create user profile...');
+          await handleProfileCreation(authUser);
+        } else {
+          // For other errors, set error but continue with auth session
+          setAuthError(new Error(`Profile fetch error: ${profileError.message}`));
+          createTemporaryProfile(authUser);
         }
-      } else if (profileError) {
-        console.error('Error loading user profile:', profileError);
-        setAuthError(profileError);
-      }
-
-      if (profile) {
-        setUserProfile(profile);
+      } else if (existingProfile) {
+        // Profile exists, use it
+        console.log('Found existing user profile');
+        setUserProfile(existingProfile);
+      } else {
+        // Profile doesn't exist, create it
+        console.log('No profile found, creating new one...');
+        await handleProfileCreation(authUser);
       }
     } catch (error) {
-      console.error('Error loading user data:', error);
+      console.error('Error in loadUserData:', error);
       setAuthError(error as Error);
+      // Still create a temporary profile so user can use the app
+      createTemporaryProfile(authUser);
     } finally {
       setLoading(false);
     }
+  };
+
+  /**
+   * Handle profile creation with proper error handling
+   */
+  const handleProfileCreation = async (authUser: User) => {
+    try {
+      const profileData = extractUserProfileData(authUser);
+      
+      const { data: newProfile, error: createError } = await supabase
+        .from('users')
+        .insert(profileData)
+        .select()
+        .single();
+      
+      if (createError) {
+        console.error('Error creating user profile:', createError);
+        
+        // If creation fails due to trigger/policy issues, try upsert
+        if (createError.code === '23505' || createError.message?.includes('duplicate')) {
+          console.log('Profile might exist, trying upsert...');
+          const { data: upsertedProfile, error: upsertError } = await supabase
+            .from('users')
+            .upsert(profileData, { onConflict: 'id' })
+            .select()
+            .single();
+            
+          if (upsertError) {
+            console.error('Upsert also failed:', upsertError);
+            createTemporaryProfile(authUser);
+          } else {
+            setUserProfile(upsertedProfile);
+            toast.success('Welcome to Claude Arena!');
+          }
+        } else {
+          // Other creation errors - use temporary profile
+          createTemporaryProfile(authUser);
+          setAuthError(createError);
+        }
+      } else {
+        // Profile created successfully
+        setUserProfile(newProfile);
+        toast.success('Welcome to Claude Arena!');
+      }
+    } catch (error) {
+      console.error('Error in handleProfileCreation:', error);
+      createTemporaryProfile(authUser);
+      setAuthError(error as Error);
+    }
+  };
+
+  /**
+   * Create a temporary profile for immediate app usage
+   */
+  const createTemporaryProfile = (authUser: User) => {
+    console.log('Creating temporary profile for user session');
+    const tempProfile: UserProfile = {
+      id: authUser.id,
+      email: authUser.email!,
+      username: authUser.email?.split('@')[0] || 'user',
+      full_name: authUser.user_metadata?.full_name || authUser.user_metadata?.name || '',
+      avatar_url: authUser.user_metadata?.avatar_url || authUser.user_metadata?.picture || '',
+      bio: undefined,
+      github_username: undefined,
+      linkedin_url: undefined,
+      privacy_settings: {
+        leaderboard: 'public',
+        achievements: 'public',
+        agents: 'public'
+      },
+      total_xp: 0,
+      current_level: 'recruit',
+      streak_days: 0,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    setUserProfile(tempProfile);
+  };
+
+  /**
+   * Extract user profile data from auth user
+   */
+  const extractUserProfileData = (authUser: User): UserProfileCreationData => {
+    const emailUsername = authUser.email?.split('@')[0] || 'user';
+    const providerUsername = authUser.user_metadata?.user_name || 
+                            authUser.user_metadata?.preferred_username ||
+                            authUser.user_metadata?.nickname;
+    
+    return {
+      id: authUser.id,
+      email: authUser.email!,
+      username: providerUsername || emailUsername,
+      full_name: authUser.user_metadata?.full_name || 
+                authUser.user_metadata?.name || 
+                emailUsername,
+      avatar_url: authUser.user_metadata?.avatar_url || 
+                 authUser.user_metadata?.picture || ''
+    };
   };
 
   const signOut = async () => {
@@ -332,6 +427,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Clear local session first
       setSession(null);
       setUserProfile(null);
+      setAuthError(null);
+      
+      // Clear ALL auth-related storage to ensure complete logout
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.includes('supabase') || key.includes('claude'))) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach(key => {
+        console.log(`Removing ${key} from localStorage`);
+        localStorage.removeItem(key);
+      });
+      
+      // Clear session storage too
+      sessionStorage.clear();
       
       // Then sign out from Supabase
       const { error } = await supabase.auth.signOut();
@@ -340,18 +452,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         toast.error('Failed to sign out');
       } else {
         toast.success('Signed out successfully');
-        navigate('/');
+        navigate('/login');
       }
     } catch (err) {
       console.error('Unexpected sign out error:', err);
       // Still navigate away even if there's an error
-      navigate('/');
+      navigate('/login');
     }
   };
   
   const refreshUserData = async () => {
     if (session?.user) {
-      await loadUserData(session.user.id);
+      await loadUserData(session.user);
     }
   };
 

@@ -33,7 +33,7 @@ export function Login() {
           redirectTo: callbackUrl,
           queryParams: provider === 'google' ? {
             access_type: 'offline',
-            prompt: 'consent',
+            prompt: 'select_account', // Force account selection
           } : undefined,
         },
       });

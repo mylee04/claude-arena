@@ -6,6 +6,7 @@ import { logOAuthDebugInfo } from '../../utils/oauthDebug';
 import { handleOAuthCallbackWithWorkarounds } from '../../utils/oauthWorkarounds';
 import { OAuthErrorHandler } from './OAuthErrorHandler';
 import { handleImplicitFlowResponse, hasImplicitFlowTokens } from '../../utils/implicitFlowHandler';
+import { useAuth } from '../../hooks/useAuth';
 
 export function OAuthCallback() {
   const navigate = useNavigate();
@@ -117,6 +118,17 @@ export function OAuthCallback() {
 
     handleOAuthCallback();
   }, [navigate]);
+
+  // Check if we're authenticated through AuthContext (fallback session)
+  const { session: authSession } = useAuth();
+  
+  useEffect(() => {
+    // If we have a session from AuthContext but we're still on callback page, redirect
+    if (authSession && status !== 'success') {
+      console.log('🔄 Session detected from AuthContext, redirecting...');
+      navigate('/', { replace: true });
+    }
+  }, [authSession, status, navigate]);
 
   // If there's an OAuth-specific error, show the enhanced error handler
   if (status === 'error' && authError) {

@@ -14,6 +14,9 @@ import { Login } from './components/auth/Login';
 import { OAuthCallback } from './components/auth/OAuthCallback';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { OAuthDiagnosticsPanel } from './components/debug/OAuthDiagnosticsPanel';
+import { DebugAuth } from './pages/DebugAuth';
+import { SessionTest } from './pages/SessionTest';
+import { AuthWrapper } from './components/auth/AuthWrapper';
 
 function App() {
   return (
@@ -31,44 +34,48 @@ function App() {
               },
             }}
           />
-          <Routes>
-            {/* Public routes */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/auth/callback" element={<OAuthCallback />} />
-            
-            {/* Routes with layout */}
-            <Route element={<Layout />}>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/leaderboards" element={<Leaderboards />} />
-              <Route path="/about" element={<About />} />
+          <AuthWrapper>
+            <Routes>
+              {/* Public routes */}
+              <Route path="/login" element={<Login />} />
+              <Route path="/auth/callback" element={<OAuthCallback />} />
+              <Route path="/debug-auth" element={<DebugAuth />} />
+              <Route path="/session-test" element={<SessionTest />} />
               
-              {/* Protected routes */}
-              <Route
-                path="/profile"
-                element={
-                  <ProtectedRoute requireProfile>
-                    <Profile />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/teams"
-                element={
-                  <ProtectedRoute requireProfile>
-                    <Teams />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/import"
-                element={
-                  <ProtectedRoute requireProfile>
-                    <ImportData />
-                  </ProtectedRoute>
-                }
-              />
-            </Route>
-          </Routes>
+              {/* Routes with layout */}
+              <Route element={<Layout />}>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/leaderboards" element={<Leaderboards />} />
+                <Route path="/about" element={<About />} />
+                
+                {/* Protected routes */}
+                <Route
+                  path="/profile"
+                  element={
+                    <ProtectedRoute requireProfile>
+                      <Profile />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/teams"
+                  element={
+                    <ProtectedRoute requireProfile>
+                      <Teams />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/import"
+                  element={
+                    <ProtectedRoute requireProfile>
+                      <ImportData />
+                    </ProtectedRoute>
+                  }
+                />
+              </Route>
+            </Routes>
+          </AuthWrapper>
           
           {/* Development tools */}
           <OAuthDiagnosticsPanel />

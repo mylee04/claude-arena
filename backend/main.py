@@ -157,11 +157,14 @@ async def shutdown_event():
 
 # Import routers
 try:
-    from routers import leaderboard, import_data
+    from routers import leaderboard, import_data, agent_routes
+    from auth.routes import router as auth_router
     
     # Include routers
+    app.include_router(auth_router, prefix="/api", tags=["authentication"])
     app.include_router(leaderboard.router, prefix="/api/leaderboard", tags=["leaderboard"])
     app.include_router(import_data.router, tags=["import"])  # prefix already in router
+    app.include_router(agent_routes.router, tags=["agents"])
     
     logger.info("All routers loaded successfully")
 except ImportError as e:
