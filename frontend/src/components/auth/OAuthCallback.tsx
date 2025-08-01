@@ -63,10 +63,10 @@ export function OAuthCallback() {
             setRecoveryMethod('Implicit Flow Direct Handler');
             toast.success('Successfully signed in!');
             
-            // The handler redirects, but just in case:
+            // Wait longer to ensure AuthContext has time to detect the session
             setTimeout(() => {
               navigate('/', { replace: true });
-            }, 1000);
+            }, 3000);
             return;
           } else {
             console.error('❌ Implicit flow handler failed:', implicitResult.error);

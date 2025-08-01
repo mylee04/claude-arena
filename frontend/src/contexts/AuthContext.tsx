@@ -55,8 +55,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.log('🔍 No Supabase session found, checking for fallback session...');
           try {
             const storedAuth = localStorage.getItem('claude-arena-auth-token');
+            console.log('📦 Initial check - Stored auth:', storedAuth ? 'Found' : 'Not found');
+            
             if (storedAuth) {
               const parsedAuth = JSON.parse(storedAuth);
+              console.log('📋 Initial check - Structure:', Object.keys(parsedAuth));
               const fallbackSession = parsedAuth.currentSession;
               
               if (fallbackSession?.access_token && fallbackSession?.user) {
@@ -191,8 +194,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         try {
           const storedAuth = localStorage.getItem('claude-arena-auth-token');
+          console.log('📦 Stored auth data:', storedAuth ? 'Found' : 'Not found');
+          
           if (storedAuth) {
-            const { currentSession } = JSON.parse(storedAuth);
+            const parsed = JSON.parse(storedAuth);
+            console.log('📋 Parsed auth structure:', Object.keys(parsed));
+            
+            const { currentSession } = parsed;
+            console.log('🔍 Current session exists:', !!currentSession);
+            console.log('🔑 Has access token:', !!currentSession?.access_token);
+            console.log('👤 Has user:', !!currentSession?.user);
+            
             if (currentSession?.access_token && currentSession?.user) {
               console.log('✅ Found fallback session in delayed check');
               
