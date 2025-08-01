@@ -50,6 +50,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Get session once on mount
         const { data: { session }, error } = await supabase.auth.getSession();
         
+        // If no session found, check for manually stored session from implicit flow fallback
+        if (!session && !error) {
+          console.log('🔍 No Supabase session found, checking for fallback session...');
+          try {
+            const storedAuth = localStorage.getItem('claude-arena-auth-token');
+            if (storedAuth) {
+              const parsedAuth = JSON.parse(storedAuth);
+              const fallbackSession = parsedAuth.currentSession;
+              
+              if (fallbackSession?.access_token && fallbackSession?.user) {
+                console.log('📋 Found fallback session, attempting to restore...');
+                
+                // Try to restore the session using the stored tokens
+                const { data: restoredData, error: restoreError } = await supabase.auth.setSession({
+                  access_token: fallbackSession.access_token,
+                  refresh_token: fallbackSession.refresh_token || '',
+                });
+                
+                if (!restoreError && restoredData.session) {
+                  console.log('✅ Successfully restored session from fallback storage');
+                  
+                  if (mounted) {
+                    setSession(restoredData.session);
+                    if (restoredData.session.user) {
+                      await loadUserData(restoredData.session.user.id);
+                    } else {
+                      setLoading(false);
+                    }
+                  }
+                  return;
+                } else {
+                  console.warn('⚠️ Failed to restore session from fallback:', restoreError);
+                  // Clean up invalid fallback session
+                  localStorage.removeItem('claude-arena-auth-token');
+                }
+              }
+            }
+          } catch (fallbackError) {
+            console.error('❌ Error processing fallback session:', fallbackError);
+            // Clean up corrupted fallback session
+            localStorage.removeItem('claude-arena-auth-token');
+          }
+        }
+        
         if (error) {
           console.error('Error getting session:', error);
           

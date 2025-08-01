@@ -73,7 +73,8 @@ export async function handleImplicitFlowResponse(): Promise<{
     if (error) {
       console.error('❌ Error setting session:', error);
       
-      // Fallback: Store tokens manually and handle auth state ourselves
+      // Fallback: Store tokens manually and let AuthContext handle restoration
+      console.log('🔄 Storing session manually for AuthContext restoration...');
       localStorage.setItem('claude-arena-auth-token', JSON.stringify({
         currentSession: {
           access_token: accessToken,
@@ -85,9 +86,8 @@ export async function handleImplicitFlowResponse(): Promise<{
         expiresAt: parseInt(expiresAt || '0')
       }));
       
-      // Force a page reload to reinitialize auth state
-      console.log('🔄 Stored session manually, reloading to apply...');
-      window.location.href = '/';
+      // Don't force reload - let AuthContext detect and restore the session
+      console.log('📤 Session stored, returning success to let AuthContext handle restoration...');
       return { success: true, session };
     }
     
