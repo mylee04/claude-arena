@@ -43,7 +43,7 @@ export const supabase = createClient(validatedUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: true,
-    flowType: 'pkce',
+    flowType: 'implicit', // Changed from 'pkce' to 'implicit' to avoid PKCE verifier issues
     storage: window.localStorage,
     storageKey: 'claude-arena-auth-token',
     debug: import.meta.env.DEV,
