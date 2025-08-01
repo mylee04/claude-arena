@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { logOAuthDebugInfo } from '../../utils/oauthDebug';
 import { handleOAuthCallbackWithWorkarounds } from '../../utils/oauthWorkarounds';
 import { OAuthErrorHandler } from './OAuthErrorHandler';
+import { handleImplicitFlowResponse, hasImplicitFlowTokens } from '../../utils/implicitFlowHandler';
 
 export function OAuthCallback() {
   const navigate = useNavigate();
@@ -51,6 +52,28 @@ export function OAuthCallback() {
           return;
         }
 
+        // Check if this is an implicit flow response
+        if (hasImplicitFlowTokens()) {
+          console.log('🔐 Detected implicit flow tokens, handling directly...');
+          const implicitResult = await handleImplicitFlowResponse();
+          
+          if (implicitResult.success) {
+            console.log('✅ Implicit flow handled successfully');
+            setStatus('success');
+            setRecoveryMethod('Implicit Flow Direct Handler');
+            toast.success('Successfully signed in!');
+            
+            // The handler redirects, but just in case:
+            setTimeout(() => {
+              navigate('/', { replace: true });
+            }, 1000);
+            return;
+          } else {
+            console.error('❌ Implicit flow handler failed:', implicitResult.error);
+            // Fall through to standard workarounds
+          }
+        }
+        
         // Use enhanced OAuth callback handler with workarounds
         console.log('🔧 Attempting OAuth callback with workaround strategies...');
         const result = await handleOAuthCallbackWithWorkarounds();
