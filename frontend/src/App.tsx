@@ -13,6 +13,7 @@ import ImportData from './components/pages/ImportData';
 import { Login } from './components/auth/Login';
 import { OAuthCallback } from './components/auth/OAuthCallback';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
+import { OAuthDiagnosticsPanel } from './components/debug/OAuthDiagnosticsPanel';
 
 function App() {
   return (
@@ -68,6 +69,9 @@ function App() {
               />
             </Route>
           </Routes>
+          
+          {/* Development tools */}
+          <OAuthDiagnosticsPanel />
           </AuthProvider>
         </Router>
       </ThemeProvider>

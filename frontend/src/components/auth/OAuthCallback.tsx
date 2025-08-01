@@ -1,33 +1,36 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Loader2, AlertCircle, CheckCircle } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { Loader2, AlertCircle, CheckCircle, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 import { logOAuthDebugInfo } from '../../utils/oauthDebug';
+import { handleOAuthCallbackWithWorkarounds } from '../../utils/oauthWorkarounds';
+import { OAuthErrorHandler } from './OAuthErrorHandler';
 
 export function OAuthCallback() {
   const navigate = useNavigate();
   const [status, setStatus] = useState<'processing' | 'success' | 'error'>('processing');
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const [authError, setAuthError] = useState<Error | null>(null);
+  const [recoveryMethod, setRecoveryMethod] = useState<string>('');
 
   useEffect(() => {
     const handleOAuthCallback = async () => {
       try {
-        console.log('🔄 Processing OAuth callback...');
+        console.log('🔄 Processing OAuth callback with enhanced workarounds...');
         
-        // Use debug utilities to analyze the callback
+        // First, use debug utilities to analyze the callback
         const debugInfo = logOAuthDebugInfo();
         
         const { hasError, error, errorDescription, isValidCallback } = debugInfo;
 
-        // Handle OAuth errors
+        // Handle OAuth errors from provider
         if (hasError && error) {
           console.error('❌ OAuth error from provider:', error, errorDescription);
+          const providerError = new Error(`OAuth Provider Error: ${errorDescription || error}`);
+          setAuthError(providerError);
           setStatus('error');
           setErrorMessage(errorDescription || error);
-          toast.error(`Authentication failed: ${errorDescription || error}`);
           
-          // Redirect to login after a delay
           setTimeout(() => {
             navigate('/login', { replace: true });
           }, 3000);
@@ -37,9 +40,10 @@ export function OAuthCallback() {
         // If no auth parameters, this might not be a valid callback
         if (!isValidCallback) {
           console.warn('⚠️ Invalid OAuth callback - no authentication parameters found');
+          const invalidError = new Error('No authentication parameters found in callback URL');
+          setAuthError(invalidError);
           setStatus('error');
           setErrorMessage('No authentication parameters found in callback URL');
-          toast.error('Invalid authentication callback');
           
           setTimeout(() => {
             navigate('/login', { replace: true });
@@ -47,63 +51,72 @@ export function OAuthCallback() {
           return;
         }
 
-        // Let Supabase handle the session from URL automatically
-        console.log('🔄 Letting Supabase process session from URL...');
+        // Use enhanced OAuth callback handler with workarounds
+        console.log('🔧 Attempting OAuth callback with workaround strategies...');
+        const result = await handleOAuthCallbackWithWorkarounds();
         
-        // Wait a moment for Supabase auth state to update
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Check if we now have a session
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
-        if (sessionError) {
-          console.error('❌ Session error:', sessionError);
-          setStatus('error');
-          setErrorMessage(sessionError.message);
-          toast.error(`Session error: ${sessionError.message}`);
-          
-          setTimeout(() => {
-            navigate('/login', { replace: true });
-          }, 3000);
-          return;
-        }
-
-        if (session?.user) {
-          console.log('✅ OAuth callback successful, user:', session.user.id);
+        if (result.success && result.session?.user) {
+          console.log('✅ OAuth callback successful with method:', result.method);
           setStatus('success');
-          toast.success('Successfully signed in!');
+          setRecoveryMethod(result.method || 'Unknown');
+          toast.success(`Successfully signed in! (${result.method})`);
           
           // Redirect to dashboard
           setTimeout(() => {
             navigate('/', { replace: true });
           }, 1500);
         } else {
-          console.warn('⚠️ No session found after OAuth callback');
+          console.error('❌ All OAuth workaround methods failed:', result.error);
+          const workaroundError = new Error(result.error || 'OAuth callback failed');
+          setAuthError(workaroundError);
           setStatus('error');
-          setErrorMessage('Authentication session not found');
-          toast.error('Failed to establish session');
+          setErrorMessage(result.error || 'Authentication session could not be established');
           
-          setTimeout(() => {
-            navigate('/login', { replace: true });
-          }, 3000);
+          // Don't auto-redirect on workaround failure - let user see the error handler
+          // setTimeout(() => {
+          //   navigate('/login', { replace: true });
+          // }, 5000);
         }
 
       } catch (error) {
         console.error('❌ OAuth callback processing error:', error);
+        const processingError = error instanceof Error ? error : new Error('Unknown processing error');
+        setAuthError(processingError);
         setStatus('error');
-        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-        setErrorMessage(errorMsg);
-        toast.error(`Authentication error: ${errorMsg}`);
+        setErrorMessage(processingError.message);
         
-        // Redirect to login after error
-        setTimeout(() => {
-          navigate('/login', { replace: true });
-        }, 3000);
+        // Don't auto-redirect on processing errors - let user see diagnostics
+        // setTimeout(() => {
+        //   navigate('/login', { replace: true });
+        // }, 3000);
       }
     };
 
     handleOAuthCallback();
   }, [navigate]);
+
+  // If there's an OAuth-specific error, show the enhanced error handler
+  if (status === 'error' && authError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: 'var(--color-bg)' }}>
+        <OAuthErrorHandler 
+          error={authError}
+          onRetry={() => {
+            setStatus('processing');
+            setAuthError(null);
+            setErrorMessage('');
+            // Trigger a fresh callback attempt
+            window.location.reload();
+          }}
+          onClearAuth={() => {
+            // Clear auth and redirect to login
+            navigate('/login', { replace: true });
+          }}
+          showDiagnostics={true}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: 'var(--color-bg)' }}>
@@ -116,6 +129,10 @@ export function OAuthCallback() {
               </div>
               <h2 className="text-xl font-semibold mb-2">Processing Authentication</h2>
               <p className="text-muted">Please wait while we complete your sign in...</p>
+              <div className="mt-4 flex justify-center">
+                <Settings className="w-4 h-4 animate-spin" style={{ color: 'var(--color-accent-blue)' }} />
+                <span className="ml-2 text-sm text-muted">Running enhanced OAuth recovery...</span>
+              </div>
             </>
           )}
           
@@ -126,10 +143,15 @@ export function OAuthCallback() {
               </div>
               <h2 className="text-xl font-semibold mb-2">Authentication Successful</h2>
               <p className="text-muted">Redirecting you to the dashboard...</p>
+              {recoveryMethod && (
+                <p className="text-sm text-muted mt-2">
+                  Recovery method: {recoveryMethod}
+                </p>
+              )}
             </>
           )}
           
-          {status === 'error' && (
+          {status === 'error' && !authError && (
             <>
               <div className="flex justify-center mb-6">
                 <AlertCircle className="w-12 h-12" style={{ color: 'var(--color-accent-red)' }} />

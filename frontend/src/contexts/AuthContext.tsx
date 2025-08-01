@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { supabase, type User as UserProfile } from "../lib/supabase";
 import { toast } from "sonner";
 import type { User, Session } from "@supabase/supabase-js";
+import { useOAuthErrorHandler } from "../components/auth/OAuthErrorHandler";
+import { quickOAuthDiagnosis } from "../utils/oauthDiagnostics";
 
 interface AuthContextType {
   user: User | null;
@@ -23,6 +25,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState<Error | null>(null);
+  const { handleOAuthError } = useOAuthErrorHandler();
 
   useEffect(() => {
     let mounted = true;
@@ -49,9 +52,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         if (error) {
           console.error('Error getting session:', error);
-          // Check if this is the "Invalid value" fetch error
-          if (error.message.includes('Invalid value') || error.message.includes('fetch')) {
-            console.error('🚨 Detected fetch/URL validation error, likely OAuth callback issue');
+          
+          // Use enhanced OAuth error handling
+          const isOAuthError = handleOAuthError(error, {
+            showDiagnostics: import.meta.env.DEV,
+            onClearAuth: () => {
+              setSession(null);
+              setUserProfile(null);
+            }
+          });
+          
+          if (isOAuthError) {
+            // Run diagnostics in development mode
+            if (import.meta.env.DEV) {
+              quickOAuthDiagnosis(import.meta.env.VITE_SUPABASE_URL);
+            }
             const enhancedError = new Error('OAuth callback processing failed. Please try signing in again.');
             setAuthError(enhancedError);
           } else {
@@ -73,8 +88,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (error) {
         console.error('Failed to initialize auth:', error);
-        // Enhanced error handling for OAuth callback issues
-        if (error instanceof Error && error.message.includes('Invalid value')) {
+        
+        // Use enhanced OAuth error handling
+        const isOAuthError = handleOAuthError(error as Error, {
+          showDiagnostics: import.meta.env.DEV,
+          onClearAuth: () => {
+            setSession(null);
+            setUserProfile(null);
+          }
+        });
+        
+        if (isOAuthError) {
+          // Run diagnostics in development mode
+          if (import.meta.env.DEV) {
+            quickOAuthDiagnosis(import.meta.env.VITE_SUPABASE_URL);
+          }
           const enhancedError = new Error('OAuth authentication failed due to invalid parameters. Please try again.');
           setAuthError(enhancedError);
         } else {
