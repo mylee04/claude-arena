@@ -17,8 +17,8 @@ SELECT * FROM public.users
 WHERE email = 'myungeun2dc@gmail.com';
 
 -- 3. Get the user ID for further checks
--- Copy the ID from the first query result and replace 'YOUR_USER_ID' below
--- Example: '2f91866e-969b-4810-875a-94a9b5ebeadc'
+-- The queries below will use auth.uid() dynamically to get the current user's ID
+-- No need to hardcode specific UUIDs - the system will use the authenticated user's ID
 
 -- 4. Check if RLS is enabled on users table
 SELECT 
@@ -41,7 +41,7 @@ FROM pg_policy
 WHERE polrelid = 'public.users'::regclass;
 
 -- 6. Test if you can insert your user profile manually
--- Replace 'YOUR_USER_ID' with the actual ID from query #1
+-- This uses auth.uid() to dynamically get the current authenticated user's ID
 /*
 INSERT INTO public.users (
     id,
@@ -50,7 +50,7 @@ INSERT INTO public.users (
     full_name,
     avatar_url
 ) VALUES (
-    'YOUR_USER_ID',
+    auth.uid(),
     'myungeun2dc@gmail.com',
     'myungeun2dc',
     'Myungeun Lee',
@@ -69,26 +69,31 @@ SELECT
     current_setting('request.jwt.claims', true)::json->>'email' as jwt_email;
 
 -- 9. Debug specific RLS policy for user creation
--- This shows what the RLS policy sees when trying to create a user
+-- This shows what the RLS policy sees for the current authenticated user
 WITH policy_check AS (
     SELECT 
-        '2f91866e-969b-4810-875a-94a9b5ebeadc'::uuid as test_user_id,
         auth.uid() as current_auth_uid,
         CASE 
-            WHEN auth.uid() = '2f91866e-969b-4810-875a-94a9b5ebeadc'::uuid 
-            THEN 'Policy should ALLOW'
-            ELSE 'Policy should DENY'
-        END as expected_result
+            WHEN auth.uid() IS NOT NULL 
+            THEN 'Policy should ALLOW - User is authenticated'
+            ELSE 'Policy will DENY - No authenticated user'
+        END as expected_result,
+        CASE
+            WHEN auth.uid() IS NOT NULL
+            THEN 'User can create/update their own profile'
+            ELSE 'User must be authenticated to create profiles'
+        END as explanation
 )
 SELECT * FROM policy_check;
 
 -- 10. Force create user profile (bypasses RLS) - ONLY USE IF NEEDED
 -- This will create the user profile regardless of RLS policies
+-- WARNING: Only use this if normal user creation is failing
 /*
 -- First, temporarily disable RLS
 ALTER TABLE public.users DISABLE ROW LEVEL SECURITY;
 
--- Insert the user
+-- Insert the user using dynamic auth.uid()
 INSERT INTO public.users (
     id,
     email,
@@ -99,7 +104,7 @@ INSERT INTO public.users (
     current_level,
     streak_days
 ) VALUES (
-    '2f91866e-969b-4810-875a-94a9b5ebeadc',
+    auth.uid(),
     'myungeun2dc@gmail.com',
     'myungeun2dc',
     'Myungeun Lee',
@@ -118,6 +123,7 @@ ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 -- 11. Final check - verify user can be read with RLS enabled
 SELECT 
     'Can read users table' as test,
-    COUNT(*) as user_count
+    COUNT(*) as user_count,
+    'Should return 1 if user exists and RLS allows access' as expected
 FROM public.users
-WHERE id = '2f91866e-969b-4810-875a-94a9b5ebeadc';
+WHERE id = auth.uid();

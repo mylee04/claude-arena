@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { getSessionDebugInfo } from '../utils/sessionDebug';
+import { config } from '../config/env';
 
 export function DebugAuth() {
   const [debugInfo, setDebugInfo] = useState<any>(null);
@@ -106,7 +107,7 @@ export function DebugAuth() {
             {debugInfo?.sessionData && (
               <>
                 <p>User: {debugInfo.sessionData.user?.email}</p>
-                <p>Expires: {new Date(debugInfo.sessionData.expires_at * 1000).toLocaleString()}</p>
+                <p>Expires: {debugInfo.sessionData.expires_at ? new Date(debugInfo.sessionData.expires_at * 1000).toLocaleString() : 'Unknown'}</p>
               </>
             )}
           </div>
@@ -146,7 +147,7 @@ export function DebugAuth() {
                 <div className="font-mono">Supabase auth token key:</div>
                 <pre className="mt-1 p-2 bg-gray-100 rounded overflow-auto text-xs">
                   {JSON.stringify(
-                    inspectStorageKey(`sb-${supabase.supabaseUrl.split('//')[1].split('.')[0]}-auth-token`), 
+                    inspectStorageKey(`sb-${config.supabase.url.split('//')[1].split('.')[0]}-auth-token`), 
                     null, 
                     2
                   )}

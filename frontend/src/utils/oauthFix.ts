@@ -3,6 +3,7 @@
  */
 
 import { supabase } from '../lib/supabase';
+import { config } from '../config/env';
 
 export async function forceProperOAuth(): Promise<void> {
   // Clear any problematic stored sessions
@@ -30,7 +31,7 @@ export async function testSupabaseConnection(): Promise<{
 }> {
   try {
     // Test basic Supabase connectivity
-    const response = await fetch(`${supabase.supabaseUrl}/auth/v1/settings`);
+    const response = await fetch(`${config.supabase.url}/auth/v1/settings`);
     
     if (!response.ok) {
       return { 
@@ -39,10 +40,8 @@ export async function testSupabaseConnection(): Promise<{
       };
     }
     
-    const data = await response.json();
     return { 
-      connected: true,
-      error: undefined 
+      connected: true
     };
   } catch (error) {
     return { 

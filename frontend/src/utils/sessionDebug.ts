@@ -8,7 +8,7 @@ import { config } from '../config/env'
 
 // Session storage keys
 const STORAGE_KEYS = {
-  supabaseAuth: `sb-${supabase.supabaseUrl.split('//')[1].split('.')[0]}-auth-token`,
+  supabaseAuth: `sb-${config.supabase.url.split('//')[1].split('.')[0]}-auth-token`,
   claudeAuth: 'claude-arena-auth-token',
   pkceVerifier: 'supabase-pkce-code-verifier',
   oauthState: 'supabase-oauth-state',
@@ -194,7 +194,7 @@ export async function logSessionDebugInfo(): Promise<void> {
     console.log('User ID:', debugInfo.sessionData.user?.id)
     console.log('Email:', debugInfo.sessionData.user?.email)
     console.log('Provider:', debugInfo.sessionData.user?.app_metadata?.provider)
-    console.log('Expires At:', new Date(debugInfo.sessionData.expires_at * 1000).toISOString())
+    console.log('Expires At:', debugInfo.sessionData.expires_at ? new Date(debugInfo.sessionData.expires_at * 1000).toISOString() : 'Unknown')
     console.log('Access Token:', `${debugInfo.sessionData.access_token?.substring(0, 20)}...`)
     console.groupEnd()
   }
@@ -270,16 +270,21 @@ export async function testSessionPersistence(): Promise<{
       recommendations.push('User needs to authenticate')
     } else {
       // Test 3: Session expiry
-      const expiryTime = sessionData.session.expires_at * 1000
-      const currentTime = Date.now()
-      const timeUntilExpiry = expiryTime - currentTime
+      if (sessionData.session?.expires_at) {
+        const expiryTime = sessionData.session.expires_at * 1000
+        const currentTime = Date.now()
+        const timeUntilExpiry = expiryTime - currentTime
 
-      if (timeUntilExpiry < 0) {
-        issues.push('Session has expired')
-        recommendations.push('Session needs to be refreshed')
-      } else if (timeUntilExpiry < 5 * 60 * 1000) { // Less than 5 minutes
-        issues.push('Session expires soon')
-        recommendations.push('Session should be refreshed proactively')
+        if (timeUntilExpiry < 0) {
+          issues.push('Session has expired')
+          recommendations.push('Session needs to be refreshed')
+        } else if (timeUntilExpiry < 5 * 60 * 1000) { // Less than 5 minutes
+          issues.push('Session expires soon')
+          recommendations.push('Session should be refreshed proactively')
+        }
+      } else {
+        issues.push('Session missing expiry timestamp')
+        recommendations.push('Session may be invalid - re-authenticate')
       }
     }
 
